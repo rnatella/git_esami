@@ -7,31 +7,72 @@ import secrets
 import string
 import sys
 import re
+from urllib.parse import urlparse
+import argparse
 
 import requests
 requests.packages.urllib3.disable_warnings()
 
-#gitlab_server='172.16.190.143'
-gitlab_server='172.16.73.132'
-gitlab_url=f"https://{gitlab_server}"
 
-top_project_group='so'
-project_subgroup = 'test-123'
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
+parser.add_argument('--group', default="so", help="Top-level GitLab group")
+parser.add_argument('--subgroup', help="GitLab subgroup", required=True)
+parser.add_argument('--repo', help="Folder where to create local repos")
+parser.add_argument('--ref', help="Folder with reference code", required=True)
+parser.add_argument('--prefix', default="student-", help="Prefix for student repos")
+parser.add_argument('--password-length', type=int, default=8, help="Length for randomly-generated passwords")
+
+args = parser.parse_args()
+
+
+xlsx_path = args.input
+
+if not os.path.exists(xlsx_path):
+    print(f"Error: '{xlsx_path}' does not exist")
+    sys.exit(1)
+
+if not xlsx_path.endswith('.xlsx'):
+    print(f"Error: '{xlsx_path}' does not seem an XLSX file")
+    sys.exit(1)
+
+
+
+top_project_group = args.group
+project_subgroup = args.subgroup
 project_path='/'+top_project_group+'/'+project_subgroup
 
+local_path = args.repo
+reference_path = args.ref
 
-local_path  = "./testrepo/"
-reference_path = "./testrepo/reference"
+if not (os.path.exists(local_path) and os.path.isdir(local_path)):
+    print(f"Error: '{local_path}' is not a valid folder")
+    sys.exit(1)
 
-prefix_username = "student-"
-password_length = 8
+if not (os.path.exists(reference_path) and os.path.isdir(reference_path)):
+    print(f"Error: '{reference_path}' is not a valid folder")
+    sys.exit(1)
+
+prefix_username = args.prefix
+password_length = args.password_length
 alphabet = string.ascii_letters + string.digits
 
 
+if not os.path.exists('./python-gitlab.cfg'):
+    print("Unable to find python-gitlab.cfg")
+    sys.exit(1)
+
 print("GitLab authentication")
 
-gl = gitlab.Gitlab(gitlab_url, private_token=os.getenv('GITLAB_PRIVATE_TOKEN'), keep_base_url=True, ssl_verify=False)
+config = gitlab.config.GitlabConfigParser(config_files=['./python-gitlab.cfg'])
+gl = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url=True, ssl_verify=False)
+
 gl.auth()
+
+
+gitlab_url=config.url
+gitlab_server=urlparse(gitlab_url).netloc
+
 
 num_existing_users = 0
 users = gl.users.list(get_all=True)
@@ -45,7 +86,7 @@ for user in users:
             num_existing_users = user_num
 
 
-wb = xw.Book('/Users/rnatella/Downloads/studenti.xlsx')
+wb = xw.Book(xlsx_path)
 sheet = wb.sheets[0]
 
 
@@ -123,20 +164,22 @@ for row in range(2,num_students+1):
     email = username + "@example.com"
     fullname = sheet.range((row,surname_column)).value + " " + sheet.range((row,name_column)).value
 
-    print(f"Creating user '{username}' (full name: {fullname}, pass: {password})")
-
     try:
         user = gl.users.create({'email': email,
                             'password': password,
                             'username': username,
                             'name': fullname,
                             'skip_confirmation': 'true'})
+
+        print(f"New user '{username}' (full name: {fullname}, pass: {password})")
+
     except:
         user = gl.users.list(username=username)[0]
+        print(f"Retrieved existing user '{username}'")
+
 
     project_name = username
 
-    """Create Project of the new Repository"""
     try:
         project = gl.projects.create(
                         {'name': project_name,
@@ -144,6 +187,8 @@ for row in range(2,num_students+1):
                         'initialize_with_readme': 'true',
                         'namespace_id': subgroup.id
                         })
+
+        print(f"New project '{project_name}'")
 
         member = project.members.create({'user_id': user.id, 'access_level':
                                         gitlab.const.AccessLevel.DEVELOPER})
@@ -158,13 +203,14 @@ for row in range(2,num_students+1):
                     })
     except:
         project = gl.projects.list(search=project_name)[0]
+        print(f"Retrieving existing project '{project_name}'")
 
 
     project_remote_path = f"{project_path}/{project_name}"
     project_local_path = os.path.join(local_path,project_name)
 
 
-    print(f"Cloning: {gitlab_server}:{project_remote_path}")
+    print(f"Cloning: {gitlab_server}/{project_remote_path}")
 
     clone = f"https://{username}:{password}@{gitlab_server}/{project_remote_path}" 
     repo = Repo.clone_from(clone, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
@@ -189,6 +235,3 @@ for row in range(2,num_students+1):
 
     origin = repo.remote(name='origin')
     origin.push()
-
-    #repo = Repo.clone_from(gitlab_url, '/root/prova')
-    #cloned_repo = repo.clone(os.path.join("./testrepo", "myrepo/"))
