@@ -9,6 +9,7 @@ import sys
 import re
 from urllib.parse import urlparse
 import argparse
+import time
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -16,12 +17,13 @@ requests.packages.urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
-parser.add_argument('--group', default="so", help="Top-level GitLab group")
-parser.add_argument('--subgroup', help="GitLab subgroup", required=True)
-parser.add_argument('--repo', help="Folder where to create local repos")
-parser.add_argument('--ref', help="Folder with reference code", required=True)
-parser.add_argument('--prefix', default="student-", help="Prefix for student repos")
-parser.add_argument('--password-length', type=int, default=8, help="Length for randomly-generated passwords")
+parser.add_argument('-g', '--group', default="so", help="Top-level GitLab group")
+parser.add_argument('-s', '--subgroup', help="GitLab subgroup", required=True)
+parser.add_argument('-r', '--repo', help="Folder where to create local repos")
+parser.add_argument('-f', '--ref', help="Folder with reference code", required=True)
+parser.add_argument('-p', '--prefix', default="student-", help="Prefix for student repos")
+parser.add_argument('-l', '--password-length', type=int, default=8, help="Length for randomly-generated passwords")
+parser.add_argument('-d', '--gitlab-delay', type=int, default=5, help="Delay (in seconds) between GitLab API calls")
 
 args = parser.parse_args()
 
@@ -40,7 +42,6 @@ if not xlsx_path.endswith('.xlsx'):
 
 top_project_group = args.group
 project_subgroup = args.subgroup
-project_path='/'+top_project_group+'/'+project_subgroup
 
 local_path = args.repo
 reference_path = args.ref
@@ -73,6 +74,7 @@ gl.auth()
 gitlab_url=config.url
 gitlab_server=urlparse(gitlab_url).netloc
 
+gitlab_delay=args.gitlab_delay
 
 num_existing_users = 0
 users = gl.users.list(get_all=True)
@@ -94,6 +96,7 @@ empty_column = sheet.used_range[-1].offset(column_offset=1).column
 
 username_column = None
 password_column = None
+url_column = None
 surname_column = None
 name_column = None
 
@@ -104,6 +107,9 @@ for col in range(1,empty_column):
 
     if sheet.range((1,col)).value == "password":
         password_column = col
+
+    if sheet.range((1,col)).value == "repository_url":
+        url_column = col
 
     if sheet.range((1,col)).value.casefold() == "cognome":
         surname_column = col
@@ -125,6 +131,7 @@ if username_column is None:
 
     username_column = empty_column
     password_column = empty_column + 1
+    url_column = empty_column + 2
 
     sheet.range((1,username_column)).value = "username"
     sheet.range((1,username_column)).font.bold = True
@@ -132,12 +139,16 @@ if username_column is None:
     sheet.range((1,password_column)).value = "password"
     sheet.range((1,password_column)).font.bold = True
 
+    sheet.range((1,url_column)).value = "repository_url"
+    sheet.range((1,url_column)).font.bold = True
 
     for row in range(2,num_students+1):
 
+        username = prefix_username + str(num_existing_users + row - 1)
+
         password = ''.join(secrets.choice(alphabet) for i in range(password_length))
 
-        sheet.range((row,username_column)).value = prefix_username + str(num_existing_users + row - 1)
+        sheet.range((row,username_column)).value = username
         sheet.range((row,password_column)).value = password
 
 
@@ -164,6 +175,9 @@ for row in range(2,num_students+1):
     email = username + "@example.com"
     fullname = sheet.range((row,surname_column)).value + " " + sheet.range((row,name_column)).value
 
+    new_user = True
+    new_project = True
+
     try:
         user = gl.users.create({'email': email,
                             'password': password,
@@ -173,9 +187,12 @@ for row in range(2,num_students+1):
 
         print(f"New user '{username}' (full name: {fullname}, pass: {password})")
 
+        time.sleep(gitlab_delay)
+
     except:
         user = gl.users.list(username=username)[0]
         print(f"Retrieved existing user '{username}'")
+        new_user = False
 
 
     project_name = username
@@ -188,10 +205,14 @@ for row in range(2,num_students+1):
                         'namespace_id': subgroup.id
                         })
 
-        print(f"New project '{project_name}'")
+        print(f"New project '{project_name}' created")
+
+        time.sleep(gitlab_delay)
 
         member = project.members.create({'user_id': user.id, 'access_level':
                                         gitlab.const.AccessLevel.DEVELOPER})
+
+        print(f"Push access for user '{username}' to project '{project_name}'")
 
         #https://stackoverflow.com/questions/67794798/how-to-update-a-protected-branch-in-python-gitlab
         project.protectedbranches.delete('main')
@@ -201,19 +222,37 @@ for row in range(2,num_students+1):
                         'push_access_level': gitlab.const.AccessLevel.DEVELOPER,
                         'allow_force_push': False
                     })
-    except:
+
+        print(f"Push access for branch 'main' to project '{project_name}'")
+
+        time.sleep(gitlab_delay)
+
+    except Exception as e:
+        print(e)
         project = gl.projects.list(search=project_name)[0]
         print(f"Retrieving existing project '{project_name}'")
+        new_project = False
 
 
-    project_remote_path = f"{project_path}/{project_name}"
+    project_remote_path = f"{gitlab_server}/{top_project_group}/{project_subgroup}/{project_name}"
     project_local_path = os.path.join(local_path,project_name)
 
+    repository_url = f"https://{username}:{password}@{project_remote_path}"
+    sheet.range((row,url_column)).value = repository_url
 
-    print(f"Cloning: {gitlab_server}/{project_remote_path}")
 
-    clone = f"https://{username}:{password}@{gitlab_server}/{project_remote_path}" 
-    repo = Repo.clone_from(clone, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
+    if os.path.exists(project_local_path) and new_project is True:
+        print("Local repo already existing, removing old one...")
+        shutil.rmtree(project_local_path)
+
+    elif os.path.exists(project_local_path):
+        print("Local repo already existing but no new repo, skipping...")
+        continue
+
+
+    print(f"Cloning: {repository_url}")
+
+    repo = Repo.clone_from(repository_url, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
 
 
     if os.path.exists(os.path.join(project_local_path, "README.md")):
