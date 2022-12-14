@@ -142,15 +142,23 @@ if username_column is None:
     sheet.range((1,url_column)).value = "repository_url"
     sheet.range((1,url_column)).font.bold = True
 
-    for row in range(2,num_students+1):
+
+
+for row in range(2,num_students+1):
+
+    username = sheet.range((row,username_column)).value
+    password = sheet.range((row,password_column)).value
+
+    if username is None and password is None:
 
         username = prefix_username + str(num_existing_users + row - 1)
 
         password = ''.join(secrets.choice(alphabet) for i in range(password_length))
 
+        print(f"Initializing user '{username}'")
+
         sheet.range((row,username_column)).value = username
         sheet.range((row,password_column)).value = password
-
 
 
 
