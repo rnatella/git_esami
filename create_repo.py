@@ -97,6 +97,8 @@ empty_column = sheet.used_range[-1].offset(column_offset=1).column
 username_column = None
 password_column = None
 url_column = None
+group_column = None
+subgroup_column = None
 surname_column = None
 name_column = None
 
@@ -110,6 +112,12 @@ for col in range(1,empty_column):
 
     if sheet.range((1,col)).value == "repository_url":
         url_column = col
+
+    if sheet.range((1,col)).value == "group":
+        group_column = col
+
+    if sheet.range((1,col)).value == "subgroup":
+        subgroup_column = col
 
     if sheet.range((1,col)).value.casefold() == "cognome":
         surname_column = col
@@ -131,13 +139,21 @@ if username_column is None:
 
     username_column = empty_column
     password_column = empty_column + 1
-    url_column = empty_column + 2
+    group_column = empty_column + 2
+    subgroup_column = empty_column + 3
+    url_column = empty_column + 4
 
     sheet.range((1,username_column)).value = "username"
     sheet.range((1,username_column)).font.bold = True
 
     sheet.range((1,password_column)).value = "password"
     sheet.range((1,password_column)).font.bold = True
+
+    sheet.range((1,group_column)).value = "group"
+    sheet.range((1,group_column)).font.bold = True
+
+    sheet.range((1,subgroup_column)).value = "subgroup"
+    sheet.range((1,subgroup_column)).font.bold = True
 
     sheet.range((1,url_column)).value = "repository_url"
     sheet.range((1,url_column)).font.bold = True
@@ -160,6 +176,9 @@ for row in range(2,num_students+1):
         sheet.range((row,username_column)).value = username
         sheet.range((row,password_column)).value = password
 
+        sheet.range((row,group_column)).value = top_project_group
+        sheet.range((row,subgroup_column)).value = project_subgroup
+sys.exit(0)
 
 
 try:
