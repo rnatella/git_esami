@@ -178,7 +178,6 @@ for row in range(2,num_students+1):
 
         sheet.range((row,group_column)).value = top_project_group
         sheet.range((row,subgroup_column)).value = project_subgroup
-sys.exit(0)
 
 
 try:
