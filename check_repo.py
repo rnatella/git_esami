@@ -2,6 +2,7 @@ import os
 import sys
 import shutil
 import gitlab
+from git import Repo
 import xlwings as xw
 import argparse
 
@@ -14,6 +15,8 @@ parser.add_argument('-i', '--input', help="Path to XLSX with list of students", 
 parser.add_argument('-g', '--group', default="so", help="Top-level GitLab group")
 parser.add_argument('-s', '--subgroup', help="GitLab subgroup", required=True)
 parser.add_argument('-u', '--user', help="GitLab user")
+parser.add_argument('-p', '--pull', action='store_true', default=False, help="Enable clone/pull of most recent commit")
+parser.add_argument('-r', '--repo', help="Folder for local repos")
 
 args = parser.parse_args()
 
@@ -28,6 +31,13 @@ if not xlsx_path.endswith('.xlsx'):
     print(f"Error: '{xlsx_path}' does not seem an XLSX file")
     sys.exit(1)
 
+
+if args.pull is True and args.repo is None:
+    print(f"Error: for cloning/pulling the repos, a path to local folder must be provided (-r)")
+    sys.exit(1)
+
+pull_enabled = args.pull
+local_path = args.repo
 
 
 top_project_group = args.group
@@ -85,6 +95,7 @@ for row in range(2,num_students+1):
     username = sheet.range((row,username_column)).value
     password = sheet.range((row,password_column)).value
     fullname = sheet.range((row,surname_column)).value + " " + sheet.range((row,name_column)).value
+    repository_url = sheet.range((row,url_column)).value
 
     if selected_user is not None and username != selected_user:
         continue
@@ -98,4 +109,32 @@ for row in range(2,num_students+1):
         print(f"{username}\t{commit.created_at}\t{commit.committer_name}\t{commit.message}")
     except:
         print(f"Project '{q_project_name}' not found, skipping...")
+    
+    
 
+    if pull_enabled is True:
+
+        if repository_url is None:
+            print(f"Empty repository URL for user '{username}', skipping...")
+
+        project_name = username
+
+        project_local_path = os.path.join(local_path,project_name)
+
+        if os.path.exists(project_local_path):
+
+            print(f"Pulling local repo for '{username}'")
+
+            repo = Repo(project_local_path)
+
+            origin = repo.remotes.origin
+
+            origin.pull(env={'GIT_SSL_NO_VERIFY': '1'})
+
+        else:
+
+            print(f"Cloning from {repository_url}")
+
+            repo = Repo.clone_from(repository_url, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
+        
+wb.close()

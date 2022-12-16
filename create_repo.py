@@ -300,3 +300,5 @@ for row in range(2,num_students+1):
 
     origin = repo.remote(name='origin')
     origin.push()
+
+wb.close()
