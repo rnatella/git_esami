@@ -31,22 +31,22 @@ $ python3 enable_users.py --enable --subgroup mysubgroup
 
 # Check/pull last commit
 
-Get info about HEAD commit in each repository, by group/subgroup:
+Get info about HEAD commit in each repository, **by group/subgroup**:
 ```
 $ python3 check_repo.py -i ~/Downloads/studenti.xlsx -s mysubgroup
 ```
 
-Get info about HEAD commit in each repository, from XLSX list:
+Get info about HEAD commit in each repository, **from XLSX list**:
 ```
 $ python3 check_repo.py -i ~/Downloads/studenti.xlsx
 ```
 
-Get info about HEAD commit for a specific user:
+Get info about HEAD commit for a **specific user**:
 ```
 $ python3 check_repo.py -u student-123
 ```
 
-Pull HEAD commit on local repository:
+**Pull** HEAD commit on local repository:
 ```
 $ python3 check_repo.py -s mysubgroup  --pull -r ./testrepo/
 ```
@@ -68,7 +68,7 @@ Shortcut: (https://172.16.73.132/admin/groups)
 
 # Generate sheet with credentials
 
-Generate sheet from multiple XLSX files, by replacing domain within Git repository URL:
+Generate sheet from multiple XLSX files, by **replacing domain** within Git repository URL:
 ```
 $ python3 generate_sheet.py -i ~/Downloads/gruppo*.xlsx -t template/template.docx  -o generated_sheet.docx  --replace_domain 192.168.2.1
 ```
