@@ -5,6 +5,7 @@ import gitlab
 from git import Repo
 import xlwings as xw
 import argparse
+from urllib.parse import urlparse
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -51,10 +52,6 @@ if selected_user is None and project_subgroup is None and xlsx_path is None:
     print("Error: you need to specify an XLSX (-i) or a GitLab group/subgroup (-g, -s) or a GitLab user (-u)")
     sys.exit(1)
 
-#if bool(top_project_group is None) != bool(project_subgroup is None):
-#    print("Error: the GitLab group and subgroup (-g, -s) should be both set to a value")
-#    sys.exit(1)
-
 
 
 print("GitLab authentication")
@@ -64,9 +61,13 @@ gl = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url
 
 gl.auth()
 
+gitlab_url=config.url
+gitlab_server=urlparse(gitlab_url).netloc
+
+
 
 projects = []
-
+credentials = {}
 
 # Search projects using list from XLSX
 
@@ -123,6 +124,8 @@ if xlsx_path is not None:
             continue
 
         projects.append(project)
+
+        credentials[username] = password
 
     wb.close()
 
@@ -181,17 +184,14 @@ for project in projects:
     
 
     if pull_enabled is True:
-
-        if repository_url is None:
-            print(f"Empty repository URL for user '{username}', skipping...")
-
-        project_name = username
+        
+        project_name = project.name
 
         project_local_path = os.path.join(local_path,project_name)
 
         if os.path.exists(project_local_path):
 
-            print(f"Pulling local repo for '{username}'")
+            print(f"Pulling local repo for '{project_name}'")
 
             repo = Repo(project_local_path)
 
@@ -200,6 +200,16 @@ for project in projects:
             origin.pull(env={'GIT_SSL_NO_VERIFY': '1'})
 
         else:
+
+            if xlsx_path is None:
+                print(f"Unable to clone repo '{project_name}' (only supported with XLSX list with users/passwords)")
+                continue
+            
+            username = project_name
+            password = credentials[username]
+            project_remote_path = f"{gitlab_server}/{project.path_with_namespace}"
+
+            repository_url = f"https://{username}:{password}@{project_remote_path}"
 
             print(f"Cloning from {repository_url}")
 
