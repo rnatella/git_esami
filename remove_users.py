@@ -1,8 +1,8 @@
 import os
 import sys
 import gitlab
-import xlwings as xw
 import argparse
+from students import Students
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -13,13 +13,12 @@ args = parser.parse_args()
 
 xlsx_path = args.input
 
-if not os.path.exists(xlsx_path):
-    print(f"Error: '{xlsx_path}' does not exist")
+try:
+    students = Students(xlsx_path)
+except Exception as e:
+    print(e)
     sys.exit(1)
 
-if not xlsx_path.endswith('.xlsx'):
-    print(f"Error: '{xlsx_path}' does not seem an XLSX file")
-    sys.exit(1)
 
 
 if not os.path.exists('./python-gitlab.cfg'):
@@ -35,25 +34,7 @@ gl.auth()
 
 
 
-wb = xw.Book(xlsx_path)
-sheet = wb.sheets[0]
-
-
-empty_column = sheet.used_range[-1].offset(column_offset=1).column
-
-username_column = None
-
-for col in range(1,empty_column):
-
-    if sheet.range((1,col)).value == "username":
-        username_column = col
-
-if username_column is None:
-    print("Username column not found in XLSX")
-    sys.exit(1)
-
-
-num_students = sheet.range('A1').end('down').row
+num_students = students.get_num_students()
 
 print(f"This script will delete {num_students} students")
 confirm = input("Do you want to continue [type 'yes']? ")
@@ -63,9 +44,9 @@ if confirm != "yes":
     sys.exit(0)
 
 
-for row in range(2,num_students+1):
+for student in students:
 
-    username = sheet.range((row,username_column)).value
+    username = student["username"]
 
     try:
         user = gl.users.list(username=username)[0]

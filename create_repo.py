@@ -2,14 +2,12 @@ import os
 import shutil
 import gitlab
 from git import Repo
-import xlwings as xw
-import secrets
-import string
 import sys
 import re
 from urllib.parse import urlparse
 import argparse
 import time
+from students import Students
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -30,14 +28,11 @@ args = parser.parse_args()
 
 xlsx_path = args.input
 
-if not os.path.exists(xlsx_path):
-    print(f"Error: '{xlsx_path}' does not exist")
+try:
+    students = Students(xlsx_path)
+except Exception as e:
+    print(e)
     sys.exit(1)
-
-if not xlsx_path.endswith('.xlsx'):
-    print(f"Error: '{xlsx_path}' does not seem an XLSX file")
-    sys.exit(1)
-
 
 
 top_project_group = args.group
@@ -56,7 +51,6 @@ if not (os.path.exists(reference_path) and os.path.isdir(reference_path)):
 
 prefix_username = args.prefix
 password_length = args.password_length
-alphabet = string.ascii_letters + string.digits
 
 
 if not os.path.exists('./python-gitlab.cfg'):
@@ -87,97 +81,15 @@ for user in users:
         if user_num > num_existing_users:
             num_existing_users = user_num
 
-
-wb = xw.Book(xlsx_path)
-sheet = wb.sheets[0]
+print("Existing students in GitLab: " + str(num_existing_users))
 
 
-empty_column = sheet.used_range[-1].offset(column_offset=1).column
-
-username_column = None
-password_column = None
-url_column = None
-group_column = None
-subgroup_column = None
-surname_column = None
-name_column = None
-
-for col in range(1,empty_column):
-
-    if sheet.range((1,col)).value == "username":
-        username_column = col
-
-    if sheet.range((1,col)).value == "password":
-        password_column = col
-
-    if sheet.range((1,col)).value == "repository_url":
-        url_column = col
-
-    if sheet.range((1,col)).value == "group":
-        group_column = col
-
-    if sheet.range((1,col)).value == "subgroup":
-        subgroup_column = col
-
-    if sheet.range((1,col)).value.casefold() == "cognome":
-        surname_column = col
-
-    if sheet.range((1,col)).value.casefold() == "nome":
-        name_column = col
-
-num_students = sheet.range('A1').end('down').row
+num_students = students.get_num_students()
 print("Total students: " + str(num_students))
 
 
-if surname_column is None or name_column is None:
-    print("Error: Missing name or surname columns in XLSX")
-    sys.exit(0)
-
-if username_column is None:
-
-    print("Populating XLSX with usernames/passwords...")
-
-    username_column = empty_column
-    password_column = empty_column + 1
-    group_column = empty_column + 2
-    subgroup_column = empty_column + 3
-    url_column = empty_column + 4
-
-    sheet.range((1,username_column)).value = "username"
-    sheet.range((1,username_column)).font.bold = True
-
-    sheet.range((1,password_column)).value = "password"
-    sheet.range((1,password_column)).font.bold = True
-
-    sheet.range((1,group_column)).value = "group"
-    sheet.range((1,group_column)).font.bold = True
-
-    sheet.range((1,subgroup_column)).value = "subgroup"
-    sheet.range((1,subgroup_column)).font.bold = True
-
-    sheet.range((1,url_column)).value = "repository_url"
-    sheet.range((1,url_column)).font.bold = True
-
-
-
-for row in range(2,num_students+1):
-
-    username = sheet.range((row,username_column)).value
-    password = sheet.range((row,password_column)).value
-
-    if username is None and password is None:
-
-        username = prefix_username + str(num_existing_users + row - 1)
-
-        password = ''.join(secrets.choice(alphabet) for i in range(password_length))
-
-        print(f"Initializing user '{username}'")
-
-        sheet.range((row,username_column)).value = username
-        sheet.range((row,password_column)).value = password
-
-        sheet.range((row,group_column)).value = top_project_group
-        sheet.range((row,subgroup_column)).value = project_subgroup
+print("Populating XLSX with usernames/passwords...")
+students.initialize_users(prefix_username, num_existing_users + 1, password_length, top_project_group, project_subgroup)
 
 
 try:
@@ -194,12 +106,13 @@ except:
 
 
 
-for row in range(2,num_students+1):
+for student in students:
 
-    username = sheet.range((row,username_column)).value
-    password = sheet.range((row,password_column)).value
+    username = student["username"]
+    password = student["password"]
+    fullname = student["surname"] + " " + student["firstname"]
     email = username + "@example.com"
-    fullname = sheet.range((row,surname_column)).value + " " + sheet.range((row,name_column)).value
+
 
     new_user = True
     new_project = True
@@ -264,7 +177,8 @@ for row in range(2,num_students+1):
     project_local_path = os.path.join(local_path,project_name)
 
     repository_url = f"https://{username}:{password}@{project_remote_path}"
-    sheet.range((row,url_column)).value = repository_url
+
+    students.set_repository_url(student["row"], repository_url)
 
 
     if os.path.exists(project_local_path) and new_project is True:
@@ -300,5 +214,3 @@ for row in range(2,num_students+1):
 
     origin = repo.remote(name='origin')
     origin.push()
-
-wb.close()

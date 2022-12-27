@@ -4,6 +4,7 @@ import argparse
 import sys
 import os
 import urllib.parse
+from students import Students
 
 
 parser = argparse.ArgumentParser()
@@ -58,48 +59,23 @@ for xlsx_path in xlsx_files:
 
     print(f"Parsing '{xlsx_path}'")
 
-    wb = xw.Book(xlsx_path)
-    sheet = wb.sheets[0]
-
-    empty_column = sheet.used_range[-1].offset(column_offset=1).column
-
-    username_column = None
-    password_column = None
-    url_column = None
-    name_column = None
-    surname_column = None
-
-    for col in range(1,empty_column):
-
-        if sheet.range((1,col)).value == "username":
-            username_column = col
-
-        if sheet.range((1,col)).value == "password":
-            password_column = col
-
-        if sheet.range((1,col)).value == "repository_url":
-            url_column = col
-        
-        if sheet.range((1,col)).value.casefold() == "cognome":
-            surname_column = col
-
-        if sheet.range((1,col)).value.casefold() == "nome":
-            name_column = col
-
-    if username_column is None or password_column is None or url_column is None:
-        print(f"Error: Missing columns in '{xlsx_path}'")
+    try:
+        students = Students(xlsx_path)
+    except Exception as e:
+        print(e)
         sys.exit(1)
 
-    num_students = sheet.range('A1').end('down').row
+
+    num_students = students.get_num_students()
     print("Total students: " + str(num_students))
 
 
-    for row in range(2,num_students+1):
+    for student in students:
 
-        username = sheet.range((row,username_column)).value
-        password = sheet.range((row,password_column)).value
-        repository_url = sheet.range((row,url_column)).value
-        fullname = sheet.range((row,surname_column)).value + " " + sheet.range((row,name_column)).value
+        username = student["username"]
+        password = student["password"]
+        repository_url = student["repository_url"]
+        fullname = student["surname"] + " " + student["firstname"]
 
         if username is None or password is None or repository_url is None:
             print(f"Empty field(s) for user '{username}', skipping...")
@@ -139,7 +115,6 @@ for xlsx_path in xlsx_files:
 
         context["row_contents"].append(item)
     
-    wb.close()
 
 
 template = DocxTemplate(template_file)

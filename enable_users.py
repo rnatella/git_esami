@@ -11,8 +11,8 @@ parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument("-e", "--enable", action=argparse.BooleanOptionalAction, help="Enable push permissions")
 group.add_argument("-d", "--disable", action=argparse.BooleanOptionalAction, help="Disable push permissions")
-parser.add_argument('--group', default="so", help="Top-level GitLab group")
-parser.add_argument('--subgroup', help="GitLab subgroup")
+parser.add_argument("-g", '--group', default="so", help="Top-level GitLab group")
+parser.add_argument("-s", '--subgroup', help="GitLab subgroup", required=True)
 
 args = parser.parse_args()
 
