@@ -1,8 +1,10 @@
 import gitlab
+from gitea import *
 import os
 import sys
 import argparse
 from urllib.parse import urlparse
+from server_interaction import ServerInteractions
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -13,6 +15,7 @@ group.add_argument("-e", "--enable", action=argparse.BooleanOptionalAction, help
 group.add_argument("-d", "--disable", action=argparse.BooleanOptionalAction, help="Disable push permissions")
 parser.add_argument("-g", '--group', default="so", help="Top-level GitLab group")
 parser.add_argument("-s", '--subgroup', help="GitLab subgroup", required=True)
+parser.add_argument("-c", '--choice', help="Server Choice", required = True)
 
 args = parser.parse_args()
 
@@ -29,40 +32,14 @@ else:
 top_project_group = args.group
 project_subgroup = args.subgroup
 project_path='/'+top_project_group+'/'+project_subgroup
+server_choice = args.choice.lower()
 
+server = ServerInteractions(server_choice)
 
-
-if not os.path.exists('./python-gitlab.cfg'):
-    print("Unable to find python-gitlab.cfg")
-    sys.exit(1)
-
-print("GitLab authentication")
-
-config = gitlab.config.GitlabConfigParser(config_files=['./python-gitlab.cfg'])
-gl = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url=True, ssl_verify=False)
-
-gl.auth()
-
-gitlab_url=config.url
-gitlab_server=urlparse(gitlab_url).netloc
-
-
-
-group = gl.groups.list(search=top_project_group)[0]
-subgroup = gl.groups.get(group.subgroups.list(search=project_subgroup)[0].id)
-
-subgroup_projects = subgroup.projects.list(all=True)
+subgroup_projects = server.get_projects(top_project_group, project_subgroup)
 
 for project in subgroup_projects:
 
-    project = gl.projects.get(project.id)
+	member = server.get_member(project)
+	server.edit_member_access(member, action, project)
 
-    member = project.members.list(query=project.name)[0]
-
-    if action == "disable":
-        member.access_level = gitlab.const.AccessLevel.GUEST
-
-    elif action == "enable":
-        member.access_level = gitlab.const.AccessLevel.DEVELOPER
-
-    member.save()
