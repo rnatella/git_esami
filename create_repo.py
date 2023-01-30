@@ -23,6 +23,7 @@ parser.add_argument('-p', '--prefix', default="student-", help="Prefix for stude
 parser.add_argument('-l', '--password-length', type=int, default=8, help="Length for randomly-generated passwords")
 parser.add_argument('-d', '--gitlab-delay', type=int, default=5, help="Delay (in seconds) between GitLab API calls")
 
+
 args = parser.parse_args()
 
 
