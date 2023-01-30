@@ -24,7 +24,7 @@ class Students:
 		self.sheet = self.wb.worksheets[0]
 		self.xlsx_path = xlsx_path
 
-		# empty_column = self.sheet.used_range[-1].offset(column_offset=1).column
+		#empty_column = self.sheet.used_range[-1].offset(column_offset=1).column
 		empty_column = len(list(self.sheet.columns)) + 1
 
 		self.username_column = None
