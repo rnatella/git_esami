@@ -92,10 +92,10 @@ except:
 	print("Top-level group not found, creating new one")
 	group = server.create_group(top_project_group)
 try:
-	subgroup = server.get_subgroup(top_project_group, project_subgroup)
+	subgroup = server.get_subgroup(group, project_subgroup)
 except:
 	print("Sub-group not found, creating new one")
-	subgroup = server.create_subgroup(top_project_group, project_subgroup)
+	subgroup = server.create_subgroup(group, project_subgroup)
 
 
 
@@ -124,18 +124,18 @@ for student in students:
 	project_name = username
 
 	try:
-		project = server.create_project(project_name, top_project_group, project_subgroup)
+		project = server.create_project(project_name, group, project_subgroup)
 
 		print(f"New project '{project_name}' created")
 
 		time.sleep(gitlab_delay)
 
-		server.add_member(top_project_group, project_name, username)
+		server.add_member(group, project_name, username)
 
 		print(f"Push access for user '{username}' to project '{project_name}'")
 
 		#https://stackoverflow.com/questions/67794798/how-to-update-a-protected-branch-in-python-gitlab
-		server.protect_main_branch(top_project_group, project_name, username)
+		server.protect_main_branch(group, project_name, username)
 
 		print(f"Push access for branch 'main' to project '{project_name}'")
 
@@ -143,7 +143,7 @@ for student in students:
 
 	except Exception as e:
 		print(e)
-		project = server.get_project(top_project_group, project_name)
+		project = server.get_project(group, project_name)
 		print(f"Retrieving existing project '{project_name}'")
 		new_project = False
 

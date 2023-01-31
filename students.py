@@ -109,6 +109,12 @@ class Students:
             self.sheet.cell(row = 1, column = self.url_column).value = "repository_url"
             self.sheet.cell(row = 1, column = self.url_column).font = cell_font
 
+    def __del__(self):
+        self.wb.save(self.xlsx_path)
+        self.wb.close()
+
+    def __iter__(self):
+        return StudentsIter(self)
 
     def get_num_students(self) -> int:
         return self.num_students
@@ -156,12 +162,7 @@ class Students:
        
 
 
-    def __del__(self):
-        self.wb.save(self.xlsx_path)
-        self.wb.close()
-
-    def __iter__(self):
-        return StudentsIter(self)
+    
 
 
 
