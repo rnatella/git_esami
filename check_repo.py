@@ -85,7 +85,7 @@ if xlsx_path is not None:
             print(f"Project '{project_name}' not found, skipping...")
             continue
 
-        projects.append(project)
+        projects.append(server.parse_project(project))
 
         credentials[username] = password
   
@@ -104,7 +104,7 @@ if selected_user is not None:
         print(f"Error: Project '{project_name}' not found")
         sys.exit(1)
 
-    projects.append(project)
+    projects.append(server.parse_project(project))
 
 
 
@@ -121,7 +121,8 @@ if project_subgroup is not None:
 
     try:
         subgroup = server.get_subgroup(group, project_subgroup)
-    except:
+    except Exception as e:
+        print(e)
         print("Error: Sub-group not found")
         sys.exit(1)
     
@@ -165,9 +166,10 @@ for project in projects:
             
             username = project_name
             password = credentials[username]
-            project_remote_path = f"{gitlab_server}/{project.path_with_namespace}"
+            project_remote_path = server.get_clone_url(project)
 
-            repository_url = f"https://{username}:{password}@{project_remote_path}"
+            repository_url = f"http://{username}:{password}@{project_remote_path}"
+            # https for gitlab, http for gitea
 
             print(f"Cloning from {repository_url}")
 

@@ -147,15 +147,13 @@ for student in students:
 		print(f"Retrieving existing project '{project_name}'")
 		new_project = False
 
-	if server_choice == "gitlab":
-		project_remote_path = f"{server.get_url()}/{top_project_group}/{project_subgroup}/{project_name}"
-	elif server_choice == "gitea":
-		project_remote_path = f"{server.get_url()}/{top_project_group}/{project_name}"
-		# apparently the project subgroup is not needed to access the repo in gitea
+	project_remote_path = server.get_clone_url(project)
+	# apparently the project subgroup is not needed to access the repo in gitea
 		
 	project_local_path = os.path.join(local_path,project_name)
 
-	repository_url = f"https://{username}:{password}@{project_remote_path}"
+	repository_url = f"http://{username}:{password}@{project_remote_path}"
+	#https for gitlab, http for gitea
 
 	students.set_repository_url(student["row"], repository_url)
 

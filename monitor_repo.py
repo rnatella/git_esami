@@ -174,7 +174,7 @@ class DashboardApp(App):
         if server_choice == "gitalb":
             hook.delete()
         elif server_choice == "gitea":
-            server.delete_hook()
+            server.delete_hook(top_project_group)
         super().exit()
 
 
@@ -253,12 +253,11 @@ if __name__ == '__main__':
         print("Error: you need to specify the server to work with")
         sys.exit(1)
 
-    server = ServerInteractions(server_chioce)
-
-
+    server = ServerInteractions(server_choice)
+    
     webhook_server_addr = None
 
-
+    print(server.get_url())
     if netaddr.valid_ipv4(server.get_url()):
 
         # Look for local network interface on this machine
@@ -283,7 +282,7 @@ if __name__ == '__main__':
 
 
                     if server.get_url() in ipset:
-                        print(f"GitLab IP '{gitlab_server}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
+                        print(f"GitLab IP '{server.get_url()}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
                         webhook_server_addr = ip
                         break
 
@@ -300,12 +299,12 @@ if __name__ == '__main__':
         print(f"Retrieving data for group /{top_project_group}/{project_subgroup}")
         init_commits(students, top_project_group, project_subgroup)
 
-
+    
     webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
 
     print(f"Initializing hook at: {webhook_url}")
 	
-    hook = server.create_hook(webhook_url)
+    hook = server.create_hook(webhook_url, top_project_group)
 
 
     loop = asyncio.new_event_loop()

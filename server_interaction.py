@@ -33,14 +33,22 @@ class ServerInteractions:
 		
 			self.server = Gitea(gitea_url = "http://localhost:3000",
 				token_text="fdc94f06ad1d4c9989b432679dbb7421b5528d93")
-			self.server_url=urlparse("http://localhost:3000").netloc
+			self.server_url=urlparse("http://127.0.0.1").netloc
 		
 		self.server_choice = server_choice
 			
 			
+	def get_url(self):
+		return self.server_url
 	
-	def get_url(self) -> str:
-		return self.server_url	
+	
+	def get_clone_url(self, project: Union[Repository, any]) -> str:
+		
+		if self.server_choice == "gitlab":
+			return f"{self.server_url}/{project.path_with_namespace}"	
+		
+		elif self.server_choice == "gitea":
+			return project.clone_url.replace("http://","")
 		
 	def get_users(self) -> list[Union[User, any]]:
 	
@@ -72,14 +80,12 @@ class ServerInteractions:
 			
 		
 			
-	def get_subgroup(self, top_name:str, sub_name: str) -> Union[Team, any]:
+	def get_subgroup(self, top_group:Union[Organization,any], sub_name: str) -> Union[Team, any]:
 	
 		if self.server_choice == "gitlab":
-			top_group = self.get_group(self.server_choice, top_name)
 			return top_group.subgroups.list(search=sub_name)[0]
 		
 		elif self.server_choice == "gitea":
-			top_group = Organization.request(self.server, top_name)
 			return top_group.get_team(sub_name)
 			
 			
@@ -96,15 +102,14 @@ class ServerInteractions:
 		
 		
 			
-	def create_subgroup(self, top_name: str, sub_name: str) -> Union[Team, any]:
+	def create_subgroup(self, group: Union[Organization, any], sub_name: str) -> Union[Team, any]:
 		
 		if self.server_choice =="gitlab":
 			return self.create_group(self.server_choice, sub_name)
 		
 		elif self.server_choice == "gitea":
-			group = Organization.request(self.server, top_name)
 			self.server.create_team(group, sub_name)
-			return self.get_subgroup(top_name, sub_name)
+			return self.get_subgroup(group, sub_name)
 		
 		
 			
@@ -132,10 +137,9 @@ class ServerInteractions:
 	
 	
 	
-	def create_project(self, project_name: str, group_name: str, subgroup_name: str) -> Union[Repository, any]:
-		
+	def create_project(self, project_name: str, group: Union[Organization, any], subgroup_name: str) -> Union[Repository, any]:
+		subgroup = self.get_subgroup(group, subgroup_name)
 		if self.server_choice == "gitlab":
-			subgroup = self.get_subgroup(group_name, subgroup_name)
 			return self.server.projects.create(
 		                    {'name': project_name,
 		                    'default_branch': 'main',
@@ -144,12 +148,9 @@ class ServerInteractions:
 		                    })
 		                    
 		elif self.server_choice == "gitea":
-			group = Organization.request(self.server, group_name)
-			subgroup = group.get_team(subgroup_name)
-			
 			group.create_repo(repoName = project_name) # default_branch and readme inizialization are by default in the used module
 			
-			project = Repository.request(self.server, owner = group_name, name = project_name)
+			project = Repository.request(self.server, owner = group.name, name = project_name)
 			
 			subgroup.add_repo(group, project)
 			
@@ -157,14 +158,13 @@ class ServerInteractions:
 	
 	
 	
-	def get_project(self, group: str, project_name: str) -> Union[Repository, any]:
+	def get_project(self, group: Union[Organization, any], project_name: str) -> Union[Repository, any]:
 		
 		if self.server_choice == "gitlab":
 			return self.server.projects.list(search=project_name)[0]
 		
 		elif self.server_choice == "gitea":
-			org = Organization.request(self.server, group)
-			return org.get_repository(project_name)
+			return group.get_repository(project_name)
 		
 		
 	
@@ -182,7 +182,7 @@ class ServerInteractions:
 	
 	
 	
-	def add_member(self,group:str,  project_name: str, username: str):
+	def add_member(self,group: Union[Organization, any],  project_name: str, username: str):
 		
 		user = self.get_user(username)
 		project = self.get_project(group, project_name)
@@ -194,7 +194,7 @@ class ServerInteractions:
 			project.add_collaborator(user)
 			
 	
-	def protect_main_branch(self,group:str, project_name: str, whitelist_usr:str):
+	def protect_main_branch(self,group: Union[Organization,any], project_name: str, whitelist_usr:str):
 		
 		project = self.get_project(group, project_name)
 		
@@ -219,16 +219,16 @@ class ServerInteractions:
 		
 		if self.server_choice == "gitlab":
 			project = self.projects.get(project.id)
-		
 			return project.members.list(query=project.name)[0]
 			
 		elif self.server_choice == "gitea":
 			server_owner = User.request(self.server, "gaetanocelentano") # server owner
 			users = project.get_users_with_access()
-			for user in users:
-				if user != server_owner:
-					return user
-			return None
+			users.remove(server_owner)
+			for usr in users:
+				return usr #doing this because for some reason users[0] is "out of range"
+	
+	
 	
 	def edit_member_access(self, usr : Union[User, any], action: str, repo: Repository) -> None:
 		
@@ -247,13 +247,54 @@ class ServerInteractions:
 			
 			elif action == "enable":
 				repo.edit_collaborator(usr, "write")
+		
+		
 			
+	def get_last_commit(self, project: Union[Repository, any]) -> Union[Commit, any]:
+		commit = None
+		if self.server_choice == "gitlab":
+			commit = project.commits.list(ref_name='main')[0]
+			print(f"{project.name}\t{commit.created_at}\t{commit.committer_name}\t\t{commit.message}")
+		
+		elif self.server_choice == "gitea":
+			commit = project.get_commits()[0]
+			print(f"{project.name}\t{commit.created}\t{commit.author.username}\t\t{commit.commit['message']}")
 			
+		return commit
 		                        
 	
+	
+	def parse_project(self, project: Union[Repository, any]) -> Union[Repository, any]:
+		if self.server_choice == "gitlab":
+			return self.server.projects.get(project.id)
+		elif self.server_choice == "gitea":
+			return project
+	
+	
+	def create_hook(self, webhook_url: str, top_name: str) -> any:
+		if self.server_choice == "gitlab":
+			return self.server.hooks.create({
+											'url': webhook_url,
+											'push_events': True
+										})
+	
+		elif self.server_choice == "gitea":
+			org = self.get_group(top_name)
+			return org.create_org_hook(webhook_url)
+	
+	
 			
+	def delete_hook(self, top_name:str):
+		group = Organization.request(self.server, top_name)
+		group.delete_org_hook()
 			
+	
+	
+	def delete_user(self, user: Union[User,any]):
+		if self.server_choice == "gitlab":
+			self.server.users.delete(user.id)
 			
-
+		elif self.server_choice == "gitea":
+			self.server.delete_usr(user)
 
 		
