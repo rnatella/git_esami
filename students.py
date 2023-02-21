@@ -101,7 +101,7 @@ class Students:
 
             #self.sheet.range((1, self.subgroup_column)).value = "subgroup"
             #self.sheet.range((1, self.subgroup_column)).font.bold = True
-            self.sheet.cell(row = 1, column = self.subgroup_column).value = "sbugroup"
+            self.sheet.cell(row = 1, column = self.subgroup_column).value = "subgroup"
             self.sheet.cell(row = 1, column = self.subgroup_column).font = cell_font
 
             #self.sheet.range((1, self.url_column)).value = "repository_url"
@@ -134,6 +134,7 @@ class Students:
 
             #username = self.sheet.range((row, self.username_column)).value
             #password = self.sheet.range((row, self.password_column)).value
+            print(self.password_column)
             username = self.sheet.cell(row = row, column = self.username_column).value
             password = self.sheet.cell(row = row, column = self.password_column).value
 

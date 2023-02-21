@@ -2,7 +2,8 @@ import os
 import shutil
 import gitlab
 from git import Repo
-from gitea import *
+import tomli
+import gitea
 import sys
 import re
 from urllib.parse import urlparse
@@ -25,15 +26,28 @@ class ServerInteractions:
 			self.server = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url=True, ssl_verify=False)
 
 			self.server.auth()
-			
-			self.server_url=urlparse(config.url).netloc
+			parsed_url = urlparse(config.url)
+			self.server_url= parsed_url.netloc
+			self.protocol = parsed_url.scheme
 			
 		
 		elif server_choice == "gitea":
 		
-			self.server = Gitea(gitea_url = "http://localhost:3000",
-				token_text="fdc94f06ad1d4c9989b432679dbb7421b5528d93")
-			self.server_url=urlparse("http://127.0.0.1").netloc
+			if not os.path.exists('./gitea.toml'):
+				print('Unable to find gitea.toml')
+				sys.exit(1)
+			
+			
+			with open('./gitea.toml', mode="rb") as f:
+				cfg = tomli.load(f)
+			
+			self.server = gitea.Gitea(gitea_url = cfg['local']['url'],
+				token_text=cfg['local']['token'])
+
+			parsed_url = urlparse(cfg['local']['url'])
+			self.server_url= parsed_url.netloc
+			self.protocol = parsed_url.scheme
+		
 		
 		self.server_choice = server_choice
 			
@@ -41,8 +55,11 @@ class ServerInteractions:
 	def get_url(self):
 		return self.server_url
 	
+	def get_protocol(self):
+		return self.protocol
 	
-	def get_clone_url(self, project: Union[Repository, any]) -> str:
+	
+	def get_clone_url(self, project: Union[gitea.Repository, any]) -> str:
 		
 		if self.server_choice == "gitlab":
 			return f"{self.server_url}/{project.path_with_namespace}"	
@@ -50,7 +67,7 @@ class ServerInteractions:
 		elif self.server_choice == "gitea":
 			return project.clone_url.replace("http://","")
 		
-	def get_users(self) -> list[Union[User, any]]:
+	def get_users(self) -> list[Union[gitea.User, any]]:
 	
 		if self.server_choice == "gitlab":
 			return self.server.users.list(get_all=True)
@@ -60,27 +77,27 @@ class ServerInteractions:
 	
 	
 	
-	def get_user(self, username: str) -> Union[User,any]:
+	def get_user(self, username: str) -> Union[gitea.User,any]:
 		
 		if self.server_choice == "gitlab":
 			return self.server.users.list(username = username)[0]
 		
 		elif self.server_choice == "gitea":
-			return User.request(self.server, username)
+			return gitea.User.request(self.server, username)
 	
 	
 	
-	def get_group(self, group_name: str) -> Union[Organization, any]:
+	def get_group(self, group_name: str) -> Union[gitea.Organization, any]:
 	
 		if self.server_choice == "gitlab":
 			return self.server.groups.list(search=group_name)[0]
 			
 		elif self.server_choice == "gitea":
-			return Organization.request(self.server, group_name)
+			return gitea.Organization.request(self.server, group_name)
 			
 		
 			
-	def get_subgroup(self, top_group:Union[Organization,any], sub_name: str) -> Union[Team, any]:
+	def get_subgroup(self, top_group:Union[gitea.Organization,any], sub_name: str) -> Union[gitea.Team, any]:
 	
 		if self.server_choice == "gitlab":
 			return top_group.subgroups.list(search=sub_name)[0]
@@ -90,22 +107,22 @@ class ServerInteractions:
 			
 			
 	
-	def create_group(self, group_name: str) -> Union[Organization, any]:
+	def create_group(self, group_name: str) -> Union[gitea.Organization, any]:
 	
 		if self.server_choice == "gitlab":
 			return self.server.groups.create({'name': group_name, 'path': group_name})
 			
 		elif self.server_choice == "gitea":
-			owner = User.request(self.server, "gaetanocelentano") # query to get the server owner
+			owner = gitea.User.request(self.server, "gaetanocelentano") # query to get the server owner
 			self.server.create_org(owner, group_name)
-			return Organization.request(self.server, group_name)
+			return gitea.Organization.request(self.server, group_name)
 		
 		
 			
-	def create_subgroup(self, group: Union[Organization, any], sub_name: str) -> Union[Team, any]:
+	def create_subgroup(self, group: Union[gitea.Organization, any], sub_name: str) -> Union[gitea.Team, any]:
 		
 		if self.server_choice =="gitlab":
-			return self.create_group(self.server_choice, sub_name)
+			return self.server.groups.create({'name': sub_name, 'path': sub_name, 'parent_id' : group.id})
 		
 		elif self.server_choice == "gitea":
 			self.server.create_team(group, sub_name)
@@ -113,7 +130,7 @@ class ServerInteractions:
 		
 		
 			
-	def create_user(self, usr_info: list) -> Union[User, any]:
+	def create_user(self, usr_info: list) -> Union[gitea.User, any]:
 		# index 0 -> username
 		# index 1 -> password
 		# index 2 -> fullname
@@ -133,11 +150,11 @@ class ServerInteractions:
 									email = usr_info[3],
 									change_pw = False,
 									send_notify = False)
-			return User.request(self.server, usr_info[0])
+			return gitea.User.request(self.server, usr_info[0])
 	
 	
 	
-	def create_project(self, project_name: str, group: Union[Organization, any], subgroup_name: str) -> Union[Repository, any]:
+	def create_project(self, project_name: str, group: Union[gitea.Organization, any], subgroup_name: str) -> Union[gitea.Repository, any]:
 		subgroup = self.get_subgroup(group, subgroup_name)
 		if self.server_choice == "gitlab":
 			return self.server.projects.create(
@@ -150,7 +167,7 @@ class ServerInteractions:
 		elif self.server_choice == "gitea":
 			group.create_repo(repoName = project_name) # default_branch and readme inizialization are by default in the used module
 			
-			project = Repository.request(self.server, owner = group.name, name = project_name)
+			project = gitea.Repository.request(self.server, owner = group.name, name = project_name)
 			
 			subgroup.add_repo(group, project)
 			
@@ -158,7 +175,7 @@ class ServerInteractions:
 	
 	
 	
-	def get_project(self, group: Union[Organization, any], project_name: str) -> Union[Repository, any]:
+	def get_project(self, group: Union[gitea.Organization, any], project_name: str) -> Union[gitea.Repository, any]:
 		
 		if self.server_choice == "gitlab":
 			return self.server.projects.list(search=project_name)[0]
@@ -176,13 +193,13 @@ class ServerInteractions:
 			return subgroup.projects.list(all=True)
 			
 		elif self.server_choice == "gitea":
-			group = Organization.request(self.server, top_name)
+			group = gitea.Organization.request(self.server, top_name)
 			subgroup = group.get_team(sub_name)
 			return subgroup.get_repos()
 	
 	
 	
-	def add_member(self,group: Union[Organization, any],  project_name: str, username: str):
+	def add_member(self,group: Union[gitea.Organization, any],  project_name: str, username: str):
 		
 		user = self.get_user(username)
 		project = self.get_project(group, project_name)
@@ -194,7 +211,7 @@ class ServerInteractions:
 			project.add_collaborator(user)
 			
 	
-	def protect_main_branch(self,group: Union[Organization,any], project_name: str, whitelist_usr:str):
+	def protect_main_branch(self,group: Union[gitea.Organization,any], project_name: str, whitelist_usr:str):
 		
 		project = self.get_project(group, project_name)
 		
@@ -215,22 +232,22 @@ class ServerInteractions:
 		    										})
 		
 			
-	def get_member(self, project: Union[Repository, any]) -> Union[User, any] :
+	def get_member(self, project: Union[gitea.Repository, any]) -> Union[gitea.User, any] :
 		
 		if self.server_choice == "gitlab":
-			project = self.projects.get(project.id)
+			project = self.server.projects.get(project.id)
 			return project.members.list(query=project.name)[0]
 			
 		elif self.server_choice == "gitea":
-			server_owner = User.request(self.server, "gaetanocelentano") # server owner
+			server_owner = gitea.User.request(self.server, "gaetanocelentano") # server owner
 			users = project.get_users_with_access()
-			users.remove(server_owner)
 			for usr in users:
-				return usr #doing this because for some reason users[0] is "out of range"
+				if usr != server_owner:
+					return usr #doing this because for some reason users[0] is "out of range" 
 	
 	
 	
-	def edit_member_access(self, usr : Union[User, any], action: str, repo: Repository) -> None:
+	def edit_member_access(self, usr : Union[gitea.User, any], action: str, repo: gitea.Repository) -> None:
 		
 		if self.server_choice == "gitlab":
 			if action == "disable":
@@ -239,7 +256,7 @@ class ServerInteractions:
 			elif action == "enable":
 				usr.access_level = gitlab.const.AccessLevel.DEVELOPER
 			
-			member.save()
+			usr.save()
 		
 		elif self.server_choice == "gitea":
 			if action == "disable":
@@ -250,7 +267,7 @@ class ServerInteractions:
 		
 		
 			
-	def get_last_commit(self, project: Union[Repository, any]) -> Union[Commit, any]:
+	def get_last_commit(self, project: Union[gitea.Repository, any]) -> Union[gitea.Commit, any]:
 		commit = None
 		if self.server_choice == "gitlab":
 			commit = project.commits.list(ref_name='main')[0]
@@ -264,7 +281,7 @@ class ServerInteractions:
 		                        
 	
 	
-	def parse_project(self, project: Union[Repository, any]) -> Union[Repository, any]:
+	def parse_project(self, project: Union[gitea.Repository, any]) -> Union[gitea.Repository, any]:
 		if self.server_choice == "gitlab":
 			return self.server.projects.get(project.id)
 		elif self.server_choice == "gitea":
@@ -285,12 +302,12 @@ class ServerInteractions:
 	
 			
 	def delete_hook(self, top_name:str):
-		group = Organization.request(self.server, top_name)
+		group = gitea.Organization.request(self.server, top_name)
 		group.delete_org_hook()
 			
 	
 	
-	def delete_user(self, user: Union[User,any]):
+	def delete_user(self, user: Union[gitea.User,any]):
 		if self.server_choice == "gitlab":
 			self.server.users.delete(user.id)
 			

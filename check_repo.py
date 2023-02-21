@@ -137,8 +137,10 @@ for project in projects:
     try:
         commit = server.get_last_commit(project)
     except Exception as e:
-        print(e)
-        print(f"Project '{project.name}' not found, skipping...")
+        if e.args[0] == "'NoneType' object has no attribute 'username'":
+            print("\tProbably there hasn't been a commit yet...")
+        else:
+            print(f"Project '{project.name}' not found, skipping...")
     
     
 
@@ -167,8 +169,9 @@ for project in projects:
             username = project_name
             password = credentials[username]
             project_remote_path = server.get_clone_url(project)
+            protocol = server.get_protocol()
 
-            repository_url = f"http://{username}:{password}@{project_remote_path}"
+            repository_url = f"{protocol}://{username}:{password}@{project_remote_path}"
             # https for gitlab, http for gitea
 
             print(f"Cloning from {repository_url}")

@@ -2,7 +2,7 @@ import os
 import shutil
 import gitlab
 from git import Repo
-from gitea import *
+import gitea
 import sys
 import re
 from urllib.parse import urlparse
@@ -75,7 +75,7 @@ for user in users:
 		if user_num > num_existing_users:
 			num_existing_users = user_num
 
-print("Existing students in GitLab: " + str(num_existing_users))
+print(f"Existing students in {server_choice}: " + str(num_existing_users))
 
 
 num_students = students.get_num_students()
@@ -124,8 +124,9 @@ for student in students:
 	project_name = username
 
 	try:
+		
 		project = server.create_project(project_name, group, project_subgroup)
-
+		
 		print(f"New project '{project_name}' created")
 
 		time.sleep(gitlab_delay)
