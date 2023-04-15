@@ -4,6 +4,7 @@ import signal
 import shutil
 from urllib.parse import urlparse
 import gitlab
+from gitea import *
 from flask import Flask, request
 import netifaces
 import netaddr
@@ -13,6 +14,7 @@ from time import monotonic
 import asyncio
 from threading import Thread
 from datetime import datetime
+from server_interaction import ServerInteractions
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -31,35 +33,37 @@ def init_commits(students: dict, top_project_group: str, project_subgroup: str):
     if project_subgroup is not None:
 
         try:
-            group = gl.groups.list(search=top_project_group)[0]
+            group = server.get_group(top_project_group)
         except:
             print("Error: Top-level group not found")
             sys.exit(1)
 
         try:
-            subgroup = group.subgroups.list(search=project_subgroup)[0]
+            subgroup = server.get_subgroup(group, project_subgroup)
         except:
             print("Error: Sub-group not found")
             sys.exit(1)
 
-        for group_obj in gl.groups.get(subgroup.id).projects.list(all=True, order_by='name', sort='asc'):
+        for group_obj in server.get_projects(top_project_group, project_subgroup):
 
-            projects.append(gl.projects.get(group_obj.id))
+            projects.append(server.parse_project(group_obj))
 
     for project in projects:
 
         try:
-            commit = project.commits.list(ref_name='main', get_all=False)[0]
+            commit = server.get_last_commit(project)
             #print(f"{project.name}\t{commit.created_at}\t{commit.committer_name}\t\t{commit.message}")
 
         except:
             print(f"Error retrieving commit for project {project.name}")
             continue
 
-        project_name = project.name
-        timestamp = commit.created_at
-        author = commit.committer_name
-        commit = commit.message
+        project_name = project.name 
+        timestamp = commit.created_at if not isinstance(commit, Commit) else commit.created
+        
+        author = commit.committer_name if not isinstance(commit, Commit) else commit.author.username
+        
+        commit = commit.message if not isinstance(commit, Commit) else commit.commit["message"]
 
         students[project_name] = {}
         students[project_name]["project"] = project_name
@@ -167,7 +171,10 @@ class DashboardApp(App):
         self.exit()
 
     def exit(self):
-        hook.delete()
+        if server_choice == "gitalb":
+            hook.delete()
+        elif server_choice == "gitea":
+            server.delete_hook(top_project_group)
         super().exit()
 
 
@@ -221,7 +228,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--subgroup', nargs='+', help="GitLab subgroup(s)", required=True)
     parser.add_argument('-p', '--webhook_port', default=8000, type=int, help="Webhook port")
     parser.add_argument('-w', '--webhook_path', default="/webhook", help="Webhook path")
-
+    parser.add_argument('-c', '--choice', help="Server Choice")
+    
     args = parser.parse_args()
 
     HOOK_PATH = args.webhook_path
@@ -229,6 +237,7 @@ if __name__ == '__main__':
 
     top_project_group = args.group
     project_subgroups = args.subgroup
+    server_choice = args.choice
 
     if not os.path.isabs(HOOK_PATH):
         print(f"Error: '{HOOK_PATH}' is not a valid absolute URL path")
@@ -239,23 +248,17 @@ if __name__ == '__main__':
     if not os.path.exists('./python-gitlab.cfg'):
         print("Unable to find python-gitlab.cfg")
         sys.exit(1)
+        
+    if server_choice is None:
+        print("Error: you need to specify the server to work with")
+        sys.exit(1)
 
-    print("GitLab authentication")
-
-    config = gitlab.config.GitlabConfigParser(config_files=['./python-gitlab.cfg'])
-    gl = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url=True, ssl_verify=False)
-
-    gl.auth()
-
-
-    gitlab_url=config.url
-    gitlab_server=urlparse(gitlab_url).netloc
-
-
+    server = ServerInteractions(server_choice)
+    
     webhook_server_addr = None
 
-
-    if netaddr.valid_ipv4(gitlab_server):
+    print(server.get_url())
+    if netaddr.valid_ipv4(server.get_url()):
 
         # Look for local network interface on this machine
         # that matches the GitLab server IP (e.g., a local virtual machine)
@@ -278,8 +281,8 @@ if __name__ == '__main__':
                     ipset = netaddr.IPSet([cidr])
 
 
-                    if gitlab_server in ipset:
-                        print(f"GitLab IP '{gitlab_server}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
+                    if server.get_url() in ipset:
+                        print(f"GitLab IP '{server.get_url()}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
                         webhook_server_addr = ip
                         break
 
@@ -296,15 +299,12 @@ if __name__ == '__main__':
         print(f"Retrieving data for group /{top_project_group}/{project_subgroup}")
         init_commits(students, top_project_group, project_subgroup)
 
-
+    
     webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
 
     print(f"Initializing hook at: {webhook_url}")
-
-    hook = gl.hooks.create({
-                            'url': webhook_url,
-                            'push_events': True
-                        })
+	
+    hook = server.create_hook(webhook_url, top_project_group)
 
 
     loop = asyncio.new_event_loop()

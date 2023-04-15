@@ -6,6 +6,7 @@ from git import Repo
 import argparse
 from urllib.parse import urlparse
 from students import Students
+from server_interaction import ServerInteractions
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -19,6 +20,7 @@ group.add_argument('-u', '--user', help="GitLab user")
 parser.add_argument('-g', '--group', default="so", help="Top-level GitLab group")
 parser.add_argument('-p', '--pull', action='store_true', default=False, help="Enable clone/pull of most recent commit")
 parser.add_argument('-r', '--repo', help="Folder for local repos")
+parser.add_argument('-c', '--choice', help="Server choice")
 
 args = parser.parse_args()
 
@@ -36,26 +38,19 @@ local_path = args.repo
 
 top_project_group = args.group
 project_subgroup = args.subgroup
-
+server_choice = args.choice
 selected_user = args.user
 
 
 if selected_user is None and project_subgroup is None and xlsx_path is None:
-    print("Error: you need to specify an XLSX (-i) or a GitLab group/subgroup (-g, -s) or a GitLab user (-u)")
+    print("Error: you need to specify an XLSX (-i) or a group/subgroup (-g, -s) or a user (-u)")
     sys.exit(1)
 
-
-
-print("GitLab authentication")
-
-config = gitlab.config.GitlabConfigParser(config_files=['./python-gitlab.cfg'])
-gl = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url=True, ssl_verify=False)
-
-gl.auth()
-
-gitlab_url=config.url
-gitlab_server=urlparse(gitlab_url).netloc
-
+if server_choice is None:
+    print("Error: you need to specify a server (-c) to work with")
+    sys.exit(1)
+    
+server = ServerInteractions(server_choice)
 
 
 projects = []
@@ -84,12 +79,13 @@ if xlsx_path is not None:
         project_name = username
 
         try:
-            project = gl.projects.list(search=project_name, order_by='name', sort='asc')[0]
+            group = server.get_group(top_project_group)
+            project = server.get_project(group, project_name)
         except:
             print(f"Project '{project_name}' not found, skipping...")
             continue
 
-        projects.append(project)
+        projects.append(server.parse_project(project))
 
         credentials[username] = password
   
@@ -102,12 +98,13 @@ if selected_user is not None:
     project_name = selected_user
 
     try:
-        project = gl.projects.list(search=project_name, order_by='name', sort='asc')[0]
+        group = server.get_group(top_project_group)
+        project = server.get_project(group, project_name)
     except:
         print(f"Error: Project '{project_name}' not found")
         sys.exit(1)
 
-    projects.append(project)
+    projects.append(server.parse_project(project))
 
 
 
@@ -117,32 +114,33 @@ if selected_user is not None:
 if project_subgroup is not None:
 
     try:
-        group = gl.groups.list(search=top_project_group)[0]
+        group = server.get_group(top_project_group)
     except:
         print("Error: Top-level group not found")
         sys.exit(1)
 
     try:
-        subgroup = group.subgroups.list(search=project_subgroup)[0]
-    except:
+        subgroup = server.get_subgroup(group, project_subgroup)
+    except Exception as e:
+        print(e)
         print("Error: Sub-group not found")
         sys.exit(1)
-
-    for group_obj in gl.groups.get(subgroup.id).projects.list(all=True, order_by='name', sort='asc'):
-
-        projects.append(gl.projects.get(group_obj.id))
-
+    
+    for project in server.get_projects(top_project_group, project_subgroup):
+    
+        projects.append(server.parse_project(project))
+    
 
 
 for project in projects:
 
     try:
-
-        commit = project.commits.list(ref_name='main')[0]
-        print(f"{project.name}\t{commit.created_at}\t{commit.committer_name}\t\t{commit.message}")
-
-    except:
-        print(f"Project '{project.name}' not found, skipping...")
+        commit = server.get_last_commit(project)
+    except Exception as e:
+        if e.args[0] == "'NoneType' object has no attribute 'username'":
+            print("\tProbably there hasn't been a commit yet...")
+        else:
+            print(f"Project '{project.name}' not found, skipping...")
     
     
 
@@ -170,9 +168,11 @@ for project in projects:
             
             username = project_name
             password = credentials[username]
-            project_remote_path = f"{gitlab_server}/{project.path_with_namespace}"
+            project_remote_path = server.get_clone_url(project)
+            protocol = server.get_protocol()
 
-            repository_url = f"https://{username}:{password}@{project_remote_path}"
+            repository_url = f"{protocol}://{username}:{password}@{project_remote_path}"
+            # https for gitlab, http for gitea
 
             print(f"Cloning from {repository_url}")
 

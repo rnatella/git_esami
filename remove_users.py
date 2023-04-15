@@ -3,15 +3,19 @@ import sys
 import gitlab
 import argparse
 from students import Students
+from server_interaction import ServerInteractions
 
 import requests
 requests.packages.urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
+parser.add_argument('-c', '--choice', help="Server Choice", required = True)
+
 args = parser.parse_args()
 
 xlsx_path = args.input
+server_choice = args.choice
 
 try:
     students = Students(xlsx_path)
@@ -20,18 +24,7 @@ except Exception as e:
     sys.exit(1)
 
 
-
-if not os.path.exists('./python-gitlab.cfg'):
-    print("Unable to find python-gitlab.cfg")
-    sys.exit(1)
-
-print("GitLab authentication")
-
-config = gitlab.config.GitlabConfigParser(config_files=['./python-gitlab.cfg'])
-gl = gitlab.Gitlab(config.url, private_token=config.private_token, keep_base_url=True, ssl_verify=False)
-
-gl.auth()
-
+server = ServerInteractions(server_choice)
 
 
 num_students = students.get_num_students()
@@ -49,11 +42,12 @@ for student in students:
     username = student["username"]
 
     try:
-        user = gl.users.list(username=username)[0]
+        user = server.get_user(username)
     except:
         print(f"User '{username}' not found, skipping")
         continue
 
     print(f"Deleting '{username}'...")
 
-    gl.users.delete(user.id)
+    
+    server.delete_user(user)

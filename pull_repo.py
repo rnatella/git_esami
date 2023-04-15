@@ -43,7 +43,6 @@ print("Total students: " + str(num_students))
 
 
 
-
 for student in students:
 
     username = student["username"]
