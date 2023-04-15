@@ -17,14 +17,14 @@ requests.packages.urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
-parser.add_argument('-g', '--group', default="so", help="Top-level GitLab group")
-parser.add_argument('-s', '--subgroup', help="GitLab subgroup", required=True)
+parser.add_argument('-g', '--group', default="so", help="Top-level group")
+parser.add_argument('-s', '--subgroup', help="Subgroup", required=True)
 parser.add_argument('-r', '--repo', help="Folder where to create local repos")
 parser.add_argument('-f', '--ref', help="Folder with reference code", required=True)
 parser.add_argument('-p', '--prefix', default="student-", help="Prefix for student repos")
 parser.add_argument('-l', '--password-length', type=int, default=8, help="Length for randomly-generated passwords")
-parser.add_argument('-d', '--gitlab-delay', type=int, default=5, help="Delay (in seconds) between GitLab API calls")
-parser.add_argument('-c', '--choice', type=str, default=None, help="Server Choice between gitlab and gitea", required=True) #added in order to request the server to work with and mantain the compatibility with both servers
+parser.add_argument('-d', '--api-delay', type=int, default=5, help="Delay (in seconds) between API calls")
+parser.add_argument('-b', '--git-platform', type=str, default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
 
 args = parser.parse_args()
@@ -56,13 +56,15 @@ if not (os.path.exists(reference_path) and os.path.isdir(reference_path)):
 prefix_username = args.prefix
 password_length = args.password_length
 
-server_choice = args.choice.lower() 
-# taking the server choice to make the entire script conditional
-# in every case will be run a single script because the whole script is conditional based on the server given when calling the script
+git_platform = args.git_platform.lower()
 
-server = ServerInteractions(server_choice)
+if not git_platform == 'gitlab' and not git_platform == 'gitea':
+	print(f"Error: '{git_platform}' is not valid (should be either 'gitlab' or 'gitea')")
+	sys.exit(1)
 
-gitlab_delay=args.gitlab_delay
+server = ServerInteractions(git_platform)
+
+api_delay=args.api_delay
 
 num_existing_users = 0
 users = server.get_users()
@@ -75,7 +77,7 @@ for user in users:
 		if user_num > num_existing_users:
 			num_existing_users = user_num
 
-print(f"Existing students in {server_choice}: " + str(num_existing_users))
+print(f"Existing students on server: " + str(num_existing_users))
 
 
 num_students = students.get_num_students()
@@ -113,7 +115,7 @@ for student in students:
 	try:
 		user = server.create_user([username, password, fullname, email])
 		print(f"New user '{username}' (full name: {fullname}, pass: {password})")
-		time.sleep(gitlab_delay)
+		time.sleep(api_delay)
 
 	except:
 		user = server.get_user(username)
@@ -124,12 +126,12 @@ for student in students:
 	project_name = username
 
 	try:
-		
+
 		project = server.create_project(project_name, group, project_subgroup)
-		
+
 		print(f"New project '{project_name}' created")
 
-		time.sleep(gitlab_delay)
+		time.sleep(api_delay)
 
 		server.add_member(group, project_name, username)
 
@@ -140,7 +142,7 @@ for student in students:
 
 		print(f"Push access for branch 'main' to project '{project_name}'")
 
-		time.sleep(gitlab_delay)
+		time.sleep(api_delay)
 
 	except Exception as e:
 		print(e)
@@ -150,7 +152,7 @@ for student in students:
 
 	project_remote_path = server.get_clone_url(project)
 	# apparently the project subgroup is not needed to access the repo in gitea
-		
+
 	project_local_path = os.path.join(local_path,project_name)
 
 	repository_url = f"http://{username}:{password}@{project_remote_path}"

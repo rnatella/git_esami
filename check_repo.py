@@ -15,12 +15,12 @@ requests.packages.urllib3.disable_warnings()
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-i', '--input', help="Path to XLSX with list of students")
-group.add_argument('-s', '--subgroup', help="GitLab subgroup")
-group.add_argument('-u', '--user', help="GitLab user")
-parser.add_argument('-g', '--group', default="so", help="Top-level GitLab group")
+group.add_argument('-s', '--subgroup', help="Subgroup")
+group.add_argument('-u', '--user', help="Git platform user")
+parser.add_argument('-g', '--group', default="so", help="Top-level group")
 parser.add_argument('-p', '--pull', action='store_true', default=False, help="Enable clone/pull of most recent commit")
 parser.add_argument('-r', '--repo', help="Folder for local repos")
-parser.add_argument('-c', '--choice', help="Server choice")
+parser.add_argument('-b', '--git-platform', default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
 args = parser.parse_args()
 
@@ -38,19 +38,20 @@ local_path = args.repo
 
 top_project_group = args.group
 project_subgroup = args.subgroup
-server_choice = args.choice
 selected_user = args.user
-
 
 if selected_user is None and project_subgroup is None and xlsx_path is None:
     print("Error: you need to specify an XLSX (-i) or a group/subgroup (-g, -s) or a user (-u)")
     sys.exit(1)
 
-if server_choice is None:
-    print("Error: you need to specify a server (-c) to work with")
+
+git_platform = args.git_platform.lower()
+
+if not git_platform == 'gitlab' and not git_platform == 'gitea':
+    print(f"Error: '{git_platform}' is not valid (should be either 'gitlab' or 'gitea')")
     sys.exit(1)
-    
-server = ServerInteractions(server_choice)
+
+server = ServerInteractions(git_platform)
 
 
 projects = []
@@ -75,7 +76,7 @@ if xlsx_path is not None:
         username = student["username"]
         password = student["password"]
         repository_url = student["repository_url"]
-        
+
         project_name = username
 
         try:
@@ -88,7 +89,7 @@ if xlsx_path is not None:
         projects.append(server.parse_project(project))
 
         credentials[username] = password
-  
+
 
 
 # Search project using username
@@ -125,11 +126,11 @@ if project_subgroup is not None:
         print(e)
         print("Error: Sub-group not found")
         sys.exit(1)
-    
+
     for project in server.get_projects(top_project_group, project_subgroup):
-    
+
         projects.append(server.parse_project(project))
-    
+
 
 
 for project in projects:
@@ -141,11 +142,11 @@ for project in projects:
             print("\tProbably there hasn't been a commit yet...")
         else:
             print(f"Project '{project.name}' not found, skipping...")
-    
-    
+
+
 
     if pull_enabled is True:
-        
+
         project_name = project.name
 
         project_local_path = os.path.join(local_path,project_name)
@@ -165,7 +166,7 @@ for project in projects:
             if xlsx_path is None:
                 print(f"Unable to clone repo '{project_name}' (only supported with XLSX list with users/passwords)")
                 continue
-            
+
             username = project_name
             password = credentials[username]
             project_remote_path = server.get_clone_url(project)

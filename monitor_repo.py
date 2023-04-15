@@ -58,11 +58,11 @@ def init_commits(students: dict, top_project_group: str, project_subgroup: str):
             print(f"Error retrieving commit for project {project.name}")
             continue
 
-        project_name = project.name 
+        project_name = project.name
         timestamp = commit.created_at if not isinstance(commit, Commit) else commit.created
-        
+
         author = commit.committer_name if not isinstance(commit, Commit) else commit.author.username
-        
+
         commit = commit.message if not isinstance(commit, Commit) else commit.commit["message"]
 
         students[project_name] = {}
@@ -131,7 +131,7 @@ class DashboardApp(App):
         rows = iter(commits)
         table.add_rows(rows)
         table.refresh()
-    
+
 
     def list_commits(self) -> list:
 
@@ -161,7 +161,7 @@ class DashboardApp(App):
         self.sort_column = self.SORT_BY_NAME
         self.sort_order_reverse = False
         self.update_table()
-    
+
     def action_sort_by_time(self) -> None:
         self.sort_column = self.SORT_BY_TIME
         self.sort_order_reverse = True
@@ -228,8 +228,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--subgroup', nargs='+', help="GitLab subgroup(s)", required=True)
     parser.add_argument('-p', '--webhook_port', default=8000, type=int, help="Webhook port")
     parser.add_argument('-w', '--webhook_path', default="/webhook", help="Webhook path")
-    parser.add_argument('-c', '--choice', help="Server Choice")
-    
+    parser.add_argument('-b', '--git-platform', default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
+
     args = parser.parse_args()
 
     HOOK_PATH = args.webhook_path
@@ -237,24 +237,20 @@ if __name__ == '__main__':
 
     top_project_group = args.group
     project_subgroups = args.subgroup
-    server_choice = args.choice
+
+    git_platform = args.git_platform.lower()
+
+    if not git_platform == 'gitlab' and not git_platform == 'gitea':
+        print(f"Error: '{git_platform}' is not valid (should be either 'gitlab' or 'gitea')")
+        sys.exit(1)
+
+    server = ServerInteractions(git_platform)
+
 
     if not os.path.isabs(HOOK_PATH):
         print(f"Error: '{HOOK_PATH}' is not a valid absolute URL path")
         sys.exit(1)
 
-
-
-    if not os.path.exists('./python-gitlab.cfg'):
-        print("Unable to find python-gitlab.cfg")
-        sys.exit(1)
-        
-    if server_choice is None:
-        print("Error: you need to specify the server to work with")
-        sys.exit(1)
-
-    server = ServerInteractions(server_choice)
-    
     webhook_server_addr = None
 
     print(server.get_url())
@@ -270,9 +266,9 @@ if __name__ == '__main__':
             addrs = netifaces.ifaddresses(iface)
 
             if netifaces.AF_INET in addrs.keys():
-                
+
                 for addr in addrs[netifaces.AF_INET]:
-                    
+
                     ip = addr["addr"]
                     netmask = addr["netmask"]
 
@@ -299,11 +295,11 @@ if __name__ == '__main__':
         print(f"Retrieving data for group /{top_project_group}/{project_subgroup}")
         init_commits(students, top_project_group, project_subgroup)
 
-    
+
     webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
 
     print(f"Initializing hook at: {webhook_url}")
-	
+
     hook = server.create_hook(webhook_url, top_project_group)
 
 
