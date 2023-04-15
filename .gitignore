@@ -1,4 +1,5 @@
 env
 testrepo
 *.cfg
+*.toml
 generated_sheet.docx
