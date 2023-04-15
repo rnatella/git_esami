@@ -3,4 +3,4 @@ default = "local"
 
 [local]
 url = 'http://127.0.0.1:3000'
-token = 'fdc94f06ad1d4c9989b432679dbb7421b5528d93'
+token = '<TOKEN>'

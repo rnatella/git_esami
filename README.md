@@ -6,8 +6,9 @@ $ source env/bin/activate
 $ pip install -r requirements.txt
 ```
 
-# python-gitlab.cfg
+# Configuration files
 
+To use these scripts with GitLab, edit `python-gitlab.cfg`:
 ```
 [global]
 default = local
@@ -20,6 +21,16 @@ private_token = <TOKEN>
 To create a token, go to "User Settings" by clicking on "Preferences" under user icon, then go to "Access Tokens", then create a new token with all scopes enabled.
 
 Shortcut: (https://172.16.73.132/-/profile/personal_access_tokens)
+
+To use these scripts with Gitea, edit `gitea.toml`:
+```
+[global]
+default = "local"
+
+[local]
+url = 'http://127.0.0.1:3000'
+token = '<TOKEN>'
+```
 
 
 # Generate users and repositories
