@@ -1,5 +1,5 @@
 #import xlwings as xw
-from openpyxl import Workbook, load_workbook 
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 # using this because xlwings does not work in ubuntu
 import os
@@ -12,7 +12,7 @@ class Students:
 
         if not os.path.exists(xlsx_path):
             raise ValueError(f"Error: '{xlsx_path}' does not exist")
-            
+
 
         if not xlsx_path.endswith('.xlsx'):
             raise ValueError(f"Error: '{xlsx_path}' does not seem an XLSX file")
@@ -75,7 +75,7 @@ class Students:
         if self.username_column is None:
 
             #print("Inizializing XLSX columns...")
-            
+
             cell_font = Font( bold = True )
 
             self.username_column = empty_column
@@ -159,11 +159,10 @@ class Students:
                 self.sheet.cell(row = row, column = self.subgroup_column).value = project_subgroup
 
 
-        self.wb.save(self.xlsx_path)        
-       
+        self.wb.save(self.xlsx_path)
 
 
-    
+
 
 
 
@@ -191,13 +190,13 @@ class StudentsIter:
 
             #username  = self._sheet.range((row, self._username_column)).value
             #password  = self._sheet.range((row, self._password_column)).value
-            
+
             username  = self._sheet.cell(row = row, column = self._username_column).value
             password  = self._sheet.cell(row = row, column = self._password_column).value
 
             #firstname = self._sheet.range((row, self._firstname_column)).value
             #surname   = self._sheet.range((row, self._surname_column)).value
-            
+
             firstname = self._sheet.cell(row = row, column = self._firstname_column).value
             surname   = self._sheet.cell(row = row, column = self._surname_column).value
 
@@ -206,14 +205,14 @@ class StudentsIter:
 
             student = {
                         "row": row,
-                        "username": username, 
-                        "password": password, 
-                        "firstname": firstname, 
+                        "username": username,
+                        "password": password,
+                        "firstname": firstname,
                         "surname": surname,
                         "repository_url": repository_url
                     }
 
             self._current_index += 1
             return student
-        
+
         raise StopIteration
