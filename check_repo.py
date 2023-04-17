@@ -5,7 +5,7 @@ import gitlab
 from git import Repo
 import argparse
 from urllib.parse import urlparse
-from students import Students
+from students_db import StudentsDB
 from server_interaction import ServerInteractions
 
 import requests
@@ -14,7 +14,7 @@ requests.packages.urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
-group.add_argument('-i', '--input', help="Path to XLSX with list of students")
+#group.add_argument('-i', '--input', help="Path to XLSX with list of students")
 group.add_argument('-s', '--subgroup', help="Subgroup")
 group.add_argument('-u', '--user', help="Git platform user")
 parser.add_argument('-g', '--group', default="so", help="Top-level group")
@@ -57,6 +57,8 @@ server = ServerInteractions(git_platform)
 projects = []
 credentials = {}
 
+
+'''
 # Search projects using list from XLSX
 
 if xlsx_path is not None:
@@ -89,7 +91,40 @@ if xlsx_path is not None:
         projects.append(server.parse_project(project))
 
         credentials[username] = password
+'''
 
+try:
+    students = StudentsDB()
+except Exception as e:
+    print(e)
+    sys.exit(1)
+
+num_students = students.get_num_students()
+print("Total students: " + str(num_students))
+
+
+for student in students:
+
+    username = student["username"]
+    password = student["password"]
+    repository_url = student["repository_url"]
+
+    credentials[username] = password
+
+    # Search projects for all users
+
+    if selected_user is None and project_subgroup is None:
+
+        project_name = username
+
+        try:
+            group = server.get_group(top_project_group)
+            project = server.get_project(group, project_name)
+        except:
+            print(f"Project '{project_name}' not found, skipping...")
+            continue
+
+        projects.append(server.parse_project(project))
 
 
 # Search project using username
@@ -163,9 +198,9 @@ for project in projects:
 
         else:
 
-            if xlsx_path is None:
-                print(f"Unable to clone repo '{project_name}' (only supported with XLSX list with users/passwords)")
-                continue
+            #if xlsx_path is None:
+            #    print(f"Unable to clone repo '{project_name}' (only supported with XLSX list with users/passwords)")
+            #    continue
 
             username = project_name
             password = credentials[username]
@@ -173,8 +208,8 @@ for project in projects:
             protocol = server.get_protocol()
 
             repository_url = f"{protocol}://{username}:{password}@{project_remote_path}"
-            # https for gitlab, http for gitea
 
             print(f"Cloning from {repository_url}")
 
             repo = Repo.clone_from(repository_url, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
+

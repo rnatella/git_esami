@@ -7,7 +7,7 @@ import sys
 import argparse
 from urllib.parse import urlparse
 import time
-from students import Students
+from students_db import StudentsDB
 
 
 import requests
@@ -15,16 +15,22 @@ requests.packages.urllib3.disable_warnings()
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
+#parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
 parser.add_argument('-r', '--repo', help="Folder for local repos", required=True)
 
 args = parser.parse_args()
 
 
-xlsx_path = args.input
+#xlsx_path = args.input
+
+#try:
+#    students = Students(xlsx_path)
+#except Exception as e:
+#    print(e)
+#    sys.exit(1)
 
 try:
-    students = Students(xlsx_path)
+    students = StudentsDB()
 except Exception as e:
     print(e)
     sys.exit(1)

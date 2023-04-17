@@ -8,7 +8,7 @@ import re
 from urllib.parse import urlparse
 import argparse
 import time
-from students import Students
+from students_db import StudentsDB
 from server_interaction import ServerInteractions
 
 import requests
@@ -16,7 +16,8 @@ requests.packages.urllib3.disable_warnings()
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
+parser.add_argument('-x', '--xlsx-import', help="Path to XLSX with list of students")
+parser.add_argument('-n', '--number-of-accounts', type=int, help="Number of new accounts to create")
 parser.add_argument('-g', '--group', default="so", help="Top-level group")
 parser.add_argument('-s', '--subgroup', help="Subgroup", required=True)
 parser.add_argument('-r', '--repo', help="Folder where to create local repos")
@@ -29,13 +30,11 @@ parser.add_argument('-b', '--git-platform', type=str, default="gitea", help="Git
 
 args = parser.parse_args()
 
+xlsx_path = args.xlsx_import
+number_of_accounts = args.number_of_accounts
 
-xlsx_path = args.input
-
-try:
-    students = Students(xlsx_path)
-except Exception as e:
-    print(e)
+if xlsx_path is None and number_of_accounts is None:
+    print("fError: You should either specify the number of new accounts (-n) or an XLSX to list the accounts (-i)")
     sys.exit(1)
 
 
@@ -80,12 +79,30 @@ for user in users:
 print(f"Existing students on server: " + str(num_existing_users))
 
 
-num_students = students.get_num_students()
-print("Total students: " + str(num_students))
+
+students = StudentsDB()
+
+if xlsx_path is not None:
+
+	print(f"Importing accounts from {xlsx_path}...")
+
+	try:
+		students.import_users(xlsx_path, prefix_username, password_length, top_project_group, project_subgroup, num_existing_users+1)
+
+		xlsx_num_students = students.xlsx_num_students
+		print(f"Imported {xlsx_num_students} from XLSX")
+
+	except Exception as e:
+		print(f"Error: Failed initialization from XLSX file: {e}")
+		sys.exit(1)
+
+elif number_of_accounts is not None:
+
+	print(f"Initializing {number_of_accounts} new accounts...")
+
+	students.initialize_users(number_of_accounts, prefix_username, password_length, top_project_group, project_subgroup, num_existing_users+1)
 
 
-print("Populating XLSX with usernames/passwords...")
-students.initialize_users(prefix_username, num_existing_users + 1, password_length, top_project_group, project_subgroup)
 
 
 try:
@@ -155,10 +172,10 @@ for student in students:
 
 	project_local_path = os.path.join(local_path,project_name)
 
-	repository_url = f"http://{username}:{password}@{project_remote_path}"
-	#https for gitlab, http for gitea
+	protocol = server.get_protocol()
+	repository_url = f"{protocol}://{username}:{password}@{project_remote_path}"
 
-	students.set_repository_url(student["row"], repository_url)
+	students.set_repository_url(student["username"], repository_url)
 
 
 	if os.path.exists(project_local_path) and new_project is True:

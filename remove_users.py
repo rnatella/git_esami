@@ -2,22 +2,28 @@ import os
 import sys
 import gitlab
 import argparse
-from students import Students
+from students_db import StudentsDB
 from server_interaction import ServerInteractions
 
 import requests
 requests.packages.urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
+#parser.add_argument('-i', '--input', help="Path to XLSX with list of students", required=True)
 parser.add_argument('-b', '--git-platform', default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
 args = parser.parse_args()
 
-xlsx_path = args.input
+#xlsx_path = args.input
+
+#try:
+#    students = Students(xlsx_path)
+#except Exception as e:
+#    print(e)
+#    sys.exit(1)
 
 try:
-    students = Students(xlsx_path)
+    students = StudentsDB()
 except Exception as e:
     print(e)
     sys.exit(1)
@@ -56,3 +62,4 @@ for student in students:
 
 
     server.delete_user(user)
+

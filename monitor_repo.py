@@ -22,6 +22,7 @@ requests.packages.urllib3.disable_warnings()
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, DataTable
 from textual import events
+from textual import log
 
 
 def init_commits(students: dict, top_project_group: str, project_subgroup: str):
@@ -59,15 +60,19 @@ def init_commits(students: dict, top_project_group: str, project_subgroup: str):
             continue
 
         project_name = project.name
-        timestamp = commit.created_at if not isinstance(commit, Commit) else commit.created
 
-        author = commit.committer_name if not isinstance(commit, Commit) else commit.author.username
+#        timestamp = commit.created_at if not isinstance(commit, Commit) else commit.created
+#        author = commit.committer_name if not isinstance(commit, Commit) else commit.author.username
+#        commit = commit.message if not isinstance(commit, Commit) else commit.commit["message"]
 
+        timestamp = commit.created_at if not isinstance(commit, Commit) else commit.commit["author"]["date"]
+        author = commit.committer_name if not isinstance(commit, Commit) else commit.commit["author"]["name"]
         commit = commit.message if not isinstance(commit, Commit) else commit.commit["message"]
 
         students[project_name] = {}
         students[project_name]["project"] = project_name
-        students[project_name]["timestamp"] = timestamp
+        #students[project_name]["timestamp"] = timestamp
+        students[project_name]["timestamp"] = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S%z")
         students[project_name]["author"] = author
         students[project_name]["commit"] = commit
         students[project_name]["local_timestamp"] = 0
@@ -145,7 +150,7 @@ class DashboardApp(App):
             [
                 (
                     (first_col_format_highlight if (monotonic() - students[s]["local_timestamp"] < self.HIGHLIGHT_PERIOD) else first_col_format) % self.students[s]["project"],
-                    (col_format_highlight if (monotonic() - students[s]["local_timestamp"] < self.HIGHLIGHT_PERIOD) else col_format) % datetime.fromisoformat(self.students[s]["timestamp"]).replace(tzinfo=None),
+                    (col_format_highlight if (monotonic() - students[s]["local_timestamp"] < self.HIGHLIGHT_PERIOD) else col_format) % self.students[s]["timestamp"],
                     (col_format_highlight if (monotonic() - students[s]["local_timestamp"] < self.HIGHLIGHT_PERIOD) else col_format) % self.students[s]["author"],
                     (col_format_highlight if (monotonic() - students[s]["local_timestamp"] < self.HIGHLIGHT_PERIOD) else col_format) % self.students[s]["commit"]
                 )
@@ -154,6 +159,8 @@ class DashboardApp(App):
             key=lambda x: x[self.sort_column],
             reverse=self.sort_order_reverse,
         )
+
+# (col_format_highlight if (monotonic() - students[s]["local_timestamp"] < self.HIGHLIGHT_PERIOD) else col_format) % datetime.fromisoformat(self.students[s]["timestamp"]).replace(tzinfo=None),
 
         return mydata
 
@@ -171,10 +178,7 @@ class DashboardApp(App):
         self.exit()
 
     def exit(self):
-        if server_choice == "gitalb":
-            hook.delete()
-        elif server_choice == "gitea":
-            server.delete_hook(top_project_group)
+        server.delete_hook(top_project_group, project_subgroups)
         super().exit()
 
 
@@ -188,27 +192,46 @@ def flask_loop(loop, HOOK_PATH: str, HOOK_PORT: int, students: dict) -> None:
 
     @app.route(HOOK_PATH, methods=['POST'])
     def webhook():
+
         if request.method == 'POST':
 
             #print("Data received from Webhook is: ", request.json)
 
             content = request.get_json()
 
-            if "object_kind" in content and content["object_kind"] == "push":
+            if server.server_choice == 'gitlab':
+                if "object_kind" in content and content["object_kind"] == "push":
 
-                project_name = content["project"]["name"]
+                    project_name = content["project"]["name"]
 
-                for commit in content["commits"]:
+                    for commit in content["commits"]:
 
-                    commit_created_at = commit["timestamp"]
-                    commit_committer_name = commit["author"]["name"]
-                    commit_message = commit["message"]
+                        commit_created_at = commit["timestamp"]
+                        commit_committer_name = commit["author"]["name"]
+                        commit_message = commit["message"]
 
-                    students[project_name]["project"] = project_name
-                    students[project_name]["timestamp"] = commit_created_at
-                    students[project_name]["author"] = commit_committer_name
-                    students[project_name]["commit"] = commit_message
-                    students[project_name]["local_timestamp"] = monotonic()
+                        students[project_name]["project"] = project_name
+                        students[project_name]["timestamp"] = commit_created_at
+                        students[project_name]["author"] = commit_committer_name
+                        students[project_name]["commit"] = commit_message
+                        students[project_name]["local_timestamp"] = monotonic()
+
+            elif server.server_choice == 'gitea':
+
+                    project_name = content["repository"]["name"]
+
+                    for commit in content["commits"]:
+
+                        commit_created_at = commit["timestamp"]
+                        commit_committer_name = commit["author"]["name"]
+                        commit_message = commit["message"]
+
+                        students[project_name]["project"] = project_name
+                        students[project_name]["timestamp"] = commit_created_at
+                        students[project_name]["author"] = commit_committer_name
+                        students[project_name]["commit"] = commit_message
+                        students[project_name]["local_timestamp"] = monotonic()
+
 
             return "OK!"
 
@@ -253,8 +276,7 @@ if __name__ == '__main__':
 
     webhook_server_addr = None
 
-    print(server.get_url())
-    if netaddr.valid_ipv4(server.get_url()):
+    if netaddr.valid_ipv4(server.get_hostname()):
 
         # Look for local network interface on this machine
         # that matches the GitLab server IP (e.g., a local virtual machine)
@@ -277,7 +299,7 @@ if __name__ == '__main__':
                     ipset = netaddr.IPSet([cidr])
 
 
-                    if server.get_url() in ipset:
+                    if server.get_hostname() in ipset:
                         print(f"GitLab IP '{server.get_url()}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
                         webhook_server_addr = ip
                         break
@@ -296,11 +318,11 @@ if __name__ == '__main__':
         init_commits(students, top_project_group, project_subgroup)
 
 
-    webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
+    webhook_url = f'{server.get_protocol()}://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
 
     print(f"Initializing hook at: {webhook_url}")
 
-    hook = server.create_hook(webhook_url, top_project_group)
+    server.create_hook(webhook_url, top_project_group, project_subgroups)
 
 
     loop = asyncio.new_event_loop()

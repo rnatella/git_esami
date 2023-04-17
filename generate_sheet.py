@@ -99,7 +99,7 @@ for xlsx_path in xlsx_files:
                     replaced_info.append(f":{parsed.password}")
 
                 replaced_info.append("@")
-            
+
             replaced_info.append(domain)
 
             if parsed.port is not None:
@@ -114,7 +114,7 @@ for xlsx_path in xlsx_files:
 
 
         context["row_contents"].append(item)
-    
+
 
 
 template = DocxTemplate(template_file)

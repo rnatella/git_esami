@@ -1,7 +1,8 @@
 #import xlwings as xw
+# note: xlwings does not work in ubuntu
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
-# using this because xlwings does not work in ubuntu
+
 import os
 import secrets
 import string
