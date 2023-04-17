@@ -32,6 +32,11 @@ url = 'http://127.0.0.1:3000'
 token = '<TOKEN>'
 ```
 
+To use webhooks, you need to add in `conf/app.ini`:
+```
+[webhook]
+ALLOWED_HOST_LIST = *
+```
 
 # Generate users and repositories
 
