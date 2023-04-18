@@ -30,6 +30,8 @@ class StudentsDB:
                             user_subgroup  VARCHAR(255) NOT NULL,
                             firstname      VARCHAR(255),
                             surname        VARCHAR(255),
+                            matricola      VARCHAR(255),
+                            docente        VARCHAR(255),
                             email          VARCHAR(255),
                             repository_url VARCHAR(255),
                             activated INT NOT NULL

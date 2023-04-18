@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+   <head>
+      <style type="text/css">
+      code {
+        background-color: #eee;
+        border: 1px solid #999;
+        display: block;
+        padding: 20px;
+      }
+      </style>
+   </head>
+   <body>
+
+      <font><b>Cognome:</b> {{ session.cognome }}</font>
+      <font><b>Nome:</b> {{ session.nome }}</font>
+      <font><b>Matricola:</b> {{ session.matricola }}</font>
+      <br/><br/>
+
+
+      Benvenuto,<br/><br/>
+
+      Utilizza i seguenti comandi per scaricare la traccia e il codice dell'esercizio:
+
+      <code>
+         git clone {{ session.repository_url }}
+      </code>
+
+      <br/><br/>
+
+      Per la consegna, utilizzare i seguenti comandi:
+
+      <code>
+         git add --all<br/>
+         git commit -m "soluzione cognome nome"<br/>
+         git push<br/>
+      </code>
+
+      <br/><br/>
+
+      Credenziali GIT<br/>
+      <b>Username:</b> {{ session.username }}
+      <b>Password:</b> {{ session.password }}
+
+   </body>
+</html>
