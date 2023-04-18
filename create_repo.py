@@ -150,7 +150,7 @@ for student in students:
 
 		time.sleep(api_delay)
 
-		server.add_member(group, project_name, username)
+		server.add_member(group, project_name, project_subgroup, username)
 
 		print(f"Push access for user '{username}' to project '{project_name}'")
 

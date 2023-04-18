@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SubmitField
 from wtforms.validators import InputRequired, Regexp
 import datetime
+import sqlite3
 
 
 app = Flask(__name__)
@@ -55,6 +56,7 @@ def start():
         return redirect(url_for('hello'))
 
     else:
+
         form = FormStudente()
 
         if form.validate_on_submit():
@@ -64,16 +66,31 @@ def start():
             session["matricola"] = form.matricola.data
             session["docente"] = form.docente.data
 
-            connection.execute("UPDATE students SET firstname=?, surname=?, matricola=?, docente=?, activated=1 WHERE id=(SELECT id FROM students WHERE activated=0 LIMIT 1);", (session["nome"], session["cognome"], session["matricola"], session["docente"]))
+            db_file="students.db"
+            connection = sqlite3.connect(db_file)
+            cursor = connection.cursor()
 
-            student_row = connection.execute("SELECT id, username, password, repository_rul FROM students WHERE nome=? AND cognome=? AND matricola=? AND docente=?;", (session["nome"], session["cognome"], session["matricola"], session["docente"]))
+            timestamp = datetime.datetime.now()
 
-            student_id, username, password, repository_url = student_row.fetchone()
+            updated = cursor.execute("UPDATE students SET firstname=?, surname=?, matricola=?, docente=?, activated=? WHERE id=(SELECT id FROM students WHERE activated IS NULL LIMIT 1);", (session["nome"], session["cognome"], session["matricola"], session["docente"], timestamp))
 
-            session["id"] = student_id
-            session["username"] = username
-            session["password"] = password
-            session["repository_url"] = repository_url
+            connection.commit()
+
+            if updated.rowcount == 0:
+                return "ERRORE: Non vi sono utenti disponibili nel sistema, contattare l'amministratore."
+
+            cursor.close()
+
+            student_row = connection.execute("SELECT id, username, password, repository_url FROM students WHERE firstname=? AND surname=? AND matricola=? AND docente=?;", (session["nome"], session["cognome"], session["matricola"], session["docente"]))
+
+            student_row = student_row.fetchone()
+
+            session["id"] = student_row[0]
+            session["username"] = student_row[1]
+            session["password"] = student_row[2]
+            session["repository_url"] = student_row[3]
+
+            connection.close()
 
             return redirect(url_for('hello'))
 
@@ -102,12 +119,13 @@ if __name__ == '__main__':
     db_file="students.db"
     connection = sqlite3.connect(db_file)
 
-
     table_exists = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
 
     if table_exists.rowcount() == 0:
         print("Errore: Database non inizializzato")
         sys.exit(1)
+
+    connection.close()
 
     app.run(debug = True)
 

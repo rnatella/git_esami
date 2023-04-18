@@ -90,6 +90,15 @@ class ServerInteractions:
 			return gitea.User.request(self.server, username)
 
 
+	def get_username(self, user: Union[gitea.User,any]) -> str:
+
+		if self.server_choice == "gitlab":
+			return user.id
+
+		elif self.server_choice == "gitea":
+			return user.username
+
+
 
 	def get_group(self, group_name: str) -> Union[gitea.Organization, any]:
 
@@ -154,12 +163,18 @@ class ServerInteractions:
 									email = usr_info[3],
 									change_pw = False,
 									send_notify = False)
-			return gitea.User.request(self.server, usr_info[0])
 
+			user = gitea.User.request(self.server, usr_info[0])
+
+			#subgroup.add_user(user) #TBD!!!
+
+			return user
 
 
 	def create_project(self, project_name: str, group: Union[gitea.Organization, any], subgroup_name: str) -> Union[gitea.Repository, any]:
+
 		subgroup = self.get_subgroup(group, subgroup_name)
+
 		if self.server_choice == "gitlab":
 			return self.server.projects.create(
 		                    {'name': project_name,
@@ -203,16 +218,22 @@ class ServerInteractions:
 
 
 
-	def add_member(self,group: Union[gitea.Organization, any],  project_name: str, username: str):
+	def add_member(self, group: Union[gitea.Organization, any], project_name: str, sub_name: str, username: str):
 
 		user = self.get_user(username)
 		project = self.get_project(group, project_name)
+
 		if self.server_choice == "gitlab":
 			member = project.members.create({'user_id': user.id, 'access_level':
 		                                    gitlab.const.AccessLevel.DEVELOPER})
 
 		elif self.server_choice == "gitea":
-			project.add_collaborator(user)
+			#project.add_collaborator(user)
+			url = f"/repos/{project.owner.username}/{project.name}/collaborators/{username}"
+			self.server.requests_put(url, {"permission": "write"})
+
+			subgroup = group.get_team(sub_name)
+			subgroup.add_user(user)
 
 
 	def protect_main_branch(self,group: Union[gitea.Organization,any], project_name: str, whitelist_usr:str):
@@ -337,6 +358,19 @@ class ServerInteractions:
 			self.server.users.delete(user.id)
 
 		elif self.server_choice == "gitea":
-			self.server.delete_usr(user)
+
+			teams = user.get_teams()
+			for team in teams:
+				team.remove_team_member(user.username)
+
+			user.delete()
+
+
+	def delete_repo(self, project: Union[gitea.Repository, any]):
+		if self.server_choice == "gitlab":
+			project.delete()
+
+		elif self.server_choice == "gitea":
+			project.delete()
 
 

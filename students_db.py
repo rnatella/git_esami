@@ -34,9 +34,8 @@ class StudentsDB:
                             docente        VARCHAR(255),
                             email          VARCHAR(255),
                             repository_url VARCHAR(255),
-                            activated INT NOT NULL
+                            activated      TIMESTAMP
                         ); """
-                        # activated BOOLEAN NOT NULL CHECK (activated IN (0, 1))
 
             self.connection.execute(create_table)
 
@@ -59,7 +58,10 @@ class StudentsDB:
 
         set_url = "UPDATE students SET repository_url=? WHERE username=?"
 
-        self.connection.execute(set_url, (repository_url,username))
+        cursor = self.connection.cursor()
+        cursor.execute(set_url, (repository_url,username))
+        self.connection.commit()
+        cursor.close()
 
 
     def initialize_users(self, num_students: int, prefix_username: str, password_length: int, top_project_group: str, project_subgroup: str, initial_user_id: int) -> None:
@@ -72,19 +74,24 @@ class StudentsDB:
 
         student_id = initial_user_id if initial_user_id > student_id else student_id
 
+        cursor = self.connection.cursor()
 
         for i in range(1, num_students+1):
 
             username = prefix_username + str(student_id)
-            student_id += 1
 
             password = ''.join(secrets.choice(alphabet) for i in range(password_length))
 
             print(f"Initializing user '{username}'")
 
-            insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','',0)"
+            insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','','','',NULL)"
 
-            self.connection.execute(insert_student, (student_id, username, password, top_project_group, project_subgroup))
+            cursor.execute(insert_student, (student_id, username, password, top_project_group, project_subgroup))
+
+            student_id += 1
+
+        self.connection.commit()
+        cursor.close()
 
 
     def import_users(self, xlsx_path: str, prefix_username: str, password_length: int, top_project_group: str, project_subgroup: str, initial_user_id: int) -> None:
@@ -167,6 +174,8 @@ class StudentsDB:
         student_id = initial_user_id if initial_user_id > student_id else student_id
 
 
+        cursor = self.connection.cursor()
+
         for row in range(2, self.xlsx_num_students+2):
 
             #username = self.sheet.range((row, self.username_column)).value
@@ -185,12 +194,27 @@ class StudentsDB:
 
             insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','',0)"
 
-            self.connection.execute(insert_student, (student_id, username, password, top_project_group, project_subgroup))
+            cursor.execute(insert_student, (student_id, username, password, top_project_group, project_subgroup))
 
             student_id += 1
 
+        self.connection.commit()
+        cursor.close()
 
         self.wb.close()
+
+    def delete_user(self, username: str):
+
+        cursor = self.connection.cursor()
+
+        delete_student = "DELETE FROM students WHERE username=?"
+
+        cursor.execute(delete_student, (username,))
+
+        self.connection.commit()
+        cursor.close()
+
+
 
 
 class StudentsIter:
@@ -210,15 +234,15 @@ class StudentsIter:
 
         if self._current_index < self._num_students:
 
-            username, password, firstname, surname, repository_url = self._results.fetchone()
+            row = self._results.fetchone()
 
             student = {
                         #"row": row,
-                        "username": username,
-                        "password": password,
-                        "firstname": firstname,
-                        "surname": surname,
-                        "repository_url": repository_url
+                        "username": row[0],
+                        "password": row[1],
+                        "firstname": row[2],
+                        "surname": row[3],
+                        "repository_url": row[4]
                     }
 
             self._current_index += 1
