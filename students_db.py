@@ -34,7 +34,8 @@ class StudentsDB:
                             docente        VARCHAR(255),
                             email          VARCHAR(255),
                             repository_url VARCHAR(255),
-                            activated      TIMESTAMP
+                            activated      TIMESTAMP,
+                            enabled        INTEGER
                         ); """
 
             self.connection.execute(create_table)
@@ -64,6 +65,26 @@ class StudentsDB:
         cursor.close()
 
 
+    def enable_user(self, username: str, enabled: bool) -> None:
+
+        set_url = "UPDATE students SET enabled=? WHERE username=?"
+
+        cursor = self.connection.cursor()
+        cursor.execute(set_url, ((1 if enabled else 0), username))
+        self.connection.commit()
+        cursor.close()
+
+
+    def enable_group(self, top_project_group: str, project_subgroup: str, enabled: bool) -> None:
+
+        set_url = "UPDATE students SET enabled=? WHERE user_group=? AND user_subgroup=?"
+
+        cursor = self.connection.cursor()
+        cursor.execute(set_url, ((1 if enabled else 0), top_project_group, project_subgroup))
+        self.connection.commit()
+        cursor.close()
+
+
     def initialize_users(self, num_students: int, prefix_username: str, password_length: int, top_project_group: str, project_subgroup: str, initial_user_id: int) -> None:
 
         alphabet = string.ascii_letters + string.digits
@@ -84,7 +105,7 @@ class StudentsDB:
 
             print(f"Initializing user '{username}'")
 
-            insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','','','',NULL)"
+            insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','','','',NULL,1)"
 
             cursor.execute(insert_student, (student_id, username, password, top_project_group, project_subgroup))
 
@@ -192,7 +213,7 @@ class StudentsDB:
 
             print(f"Initializing user '{username}'")
 
-            insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','',0)"
+            insert_student = "INSERT INTO students VALUES (?,?,?,?,?,'','','','','','',NULL,1)"
 
             cursor.execute(insert_student, (student_id, username, password, top_project_group, project_subgroup))
 

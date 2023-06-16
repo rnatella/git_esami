@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 from urllib.parse import urlparse
+from students_db import StudentsDB
 from server_interaction import ServerInteractions
 
 import requests
@@ -28,6 +29,8 @@ else:
     sys.exit(1)
 
 
+students = StudentsDB()
+
 
 top_project_group = args.group
 project_subgroup = args.subgroup
@@ -48,4 +51,10 @@ for project in subgroup_projects:
 
 	member = server.get_member(project)
 	server.edit_member_access(member, action, project)
+
+
+if action == "enable":
+    students.enable_group(top_project_group, project_subgroup, True)
+else:
+    students.enable_group(top_project_group, project_subgroup, False)
 

@@ -96,3 +96,13 @@ Generate sheet from multiple XLSX files, by **replacing domain** within Git repo
 ```
 $ python3 generate_sheet.py -i ~/Downloads/gruppo*.xlsx -t template/template.docx  -o generated_sheet.docx  --replace_domain 192.168.2.1
 ```
+
+
+# Web user interface (students get username/password)
+
+```
+export FLASK_RUN_HOST=0.0.0.0
+export FLASK_RUN_PORT=5000
+flask  --app web_form_app run
+```
+
