@@ -20,12 +20,13 @@ group.add_argument('-u', '--user', help="Git platform user")
 parser.add_argument('-g', '--group', default="so", help="Top-level group")
 parser.add_argument('-p', '--pull', action='store_true', default=False, help="Enable clone/pull of most recent commit")
 parser.add_argument('-r', '--repo', help="Folder for local repos")
+parser.add_argument('-n', '--rename', action='store_true', default=False, help="Rename project folder using surname/firstname")
 parser.add_argument('-b', '--git-platform', default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
 args = parser.parse_args()
 
 
-xlsx_path = args.input
+#xlsx_path = args.input
 
 
 if args.pull is True and args.repo is None:
@@ -33,6 +34,7 @@ if args.pull is True and args.repo is None:
     sys.exit(1)
 
 pull_enabled = args.pull
+rename_projects = args.rename
 local_path = args.repo
 
 
@@ -40,8 +42,12 @@ top_project_group = args.group
 project_subgroup = args.subgroup
 selected_user = args.user
 
-if selected_user is None and project_subgroup is None and xlsx_path is None:
-    print("Error: you need to specify an XLSX (-i) or a group/subgroup (-g, -s) or a user (-u)")
+#if selected_user is None and project_subgroup is None and xlsx_path is None:
+#    print("Error: you need to specify an XLSX (-i) or a group/subgroup (-g, -s) or a user (-u)")
+#    sys.exit(1)
+
+if selected_user is None and project_subgroup is None:
+    print("Error: you need to specify a group/subgroup (-g, -s) or a user (-u)")
     sys.exit(1)
 
 
@@ -99,8 +105,8 @@ except Exception as e:
     print(e)
     sys.exit(1)
 
-num_students = students.get_num_students()
-print("Total students: " + str(num_students))
+#num_students = students.get_num_students()
+#print("Total students: " + str(num_students))
 
 
 for student in students:
@@ -212,4 +218,16 @@ for project in projects:
             print(f"Cloning from {repository_url}")
 
             repo = Repo.clone_from(repository_url, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
+
+        if rename_projects:
+
+            student_info = students.get_user_info(project_name)
+            #print(student_info)
+
+            if student_info["activated"] and (not student_info["surname"] is None) and (not student_info["firstname"] is None) and (not student_info["matricola"] is None):
+
+                new_folder = os.path.join(local_path, f"{student_info['surname'].lower()}-{student_info['firstname'].lower()}-{student_info['matricola']}")
+
+                os.rename(project_local_path, new_folder)
+
 

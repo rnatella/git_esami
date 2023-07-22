@@ -1,0 +1,21 @@
+[Unit]
+Description=docker-gitea
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+
+WorkingDirectory=/opt/docker-compose-gitea/
+
+# Update images if needed
+ExecStartPre=/usr/bin/docker-compose pull
+
+# Compose up
+ExecStart=/usr/local/bin/docker-compose up
+
+# Compose down, remove containers and volumes
+ExecStop=/usr/local/bin/docker-compose down
+
+[Install]
+WantedBy=multi-user.target

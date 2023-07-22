@@ -235,7 +235,27 @@ class StudentsDB:
         self.connection.commit()
         cursor.close()
 
+    def get_user_info(self, username: str):
 
+        results = self.connection.execute("SELECT username, password, firstname, surname, matricola, docente, repository_url, user_group, user_subgroup, activated FROM students WHERE username = ?", (username,))
+
+        row = results.fetchone()
+
+        student = {
+                    #"row": row,
+                    "username": row[0],
+                    "password": row[1],
+                    "firstname": row[2],
+                    "surname": row[3],
+                    "matricola": row[4],
+                    "docente": row[5],
+                    "repository_url": row[6],
+                    "group": row[7],
+                    "subgroup": row[8],
+                    "activated": (False if row[9]==None else True)
+                }
+
+        return student
 
 
 class StudentsIter:
@@ -245,7 +265,7 @@ class StudentsIter:
         self.students = students
         self._current_index = 0
         self._num_students = students.get_num_students()
-        self._results = students.connection.execute("SELECT username, password, firstname, surname, repository_url FROM students")
+        self._results = students.connection.execute("SELECT username, password, firstname, surname, matricola, docente, repository_url, user_group, user_subgroup, activated FROM students")
 
 
     def __iter__(self):
@@ -263,7 +283,12 @@ class StudentsIter:
                         "password": row[1],
                         "firstname": row[2],
                         "surname": row[3],
-                        "repository_url": row[4]
+                        "matricola": row[4],
+                        "docente": row[5],
+                        "repository_url": row[6],
+                        "group": row[7],
+                        "subgroup": row[8],
+                        "activated": (False if row[9]==None else True)
                     }
 
             self._current_index += 1

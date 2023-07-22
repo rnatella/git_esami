@@ -1,0 +1,61 @@
+version: '3'
+
+networks:
+  frontend:
+    external: false
+  backend:
+    external: false
+
+volumes:
+  gitea_app:
+    driver: local
+  gitea_db:
+    driver: local
+
+services:
+  app:
+    container_name: gitea-app
+    restart: always
+    image: gitea/gitea:${GITEA_VERSION}
+    links:
+      - db:mariadb
+    volumes:
+      - gitea_app:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${GITEA_SSH_PORT}:22"
+      - "${GITEA_WEB_PORT}:3000"
+    environment:
+      - VIRTUAL_PORT=3000
+      - VIRTUAL_HOST=${GITEA_HOSTNAME}
+      - USER_UID=${USER_UID}
+      - USER_GID=${USER_GID}
+      - GITEA__server__ROOT_URL=${GITEA_BASE_URL}
+      - GITEA__database__DB_TYPE=mysql
+      - GITEA__database__HOST=db:3306
+      - GITEA__database__NAME=${MYSQL_DATABASE}
+      - GITEA__database__USER=${MYSQL_USER}
+      - GITEA__database__PASSWD=${MYSQL_PASSWORD}
+      - GITEA__webhook__ALLOWED_HOST_LIST=*
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      - db
+  db:
+    container_name: gitea-db
+    restart: always
+    image: mariadb:10.10.2
+    #security_opt:
+    #  - seccomp:unconfined
+    cap_add: [ SYS_NICE ]
+    volumes:
+      - gitea_db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    networks:
+      - backend

@@ -3,3 +3,4 @@ testrepo
 *.cfg
 *.toml
 generated_sheet.docx
+.current_exam.txt

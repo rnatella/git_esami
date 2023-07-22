@@ -6,6 +6,56 @@ $ source env/bin/activate
 $ pip install -r requirements.txt
 ```
 
+# Quick tutorial
+
+Deploy local Gitea+MariaDB server
+
+```
+cd docker-compose-gitea/
+
+./gitea_configure.sh
+...enter admin password...
+...enter public IP address...
+
+./gitea_token.sh
+
+cd ..
+```
+
+Initialize accounts for users
+```
+./exams_create.sh  esame-2023-07  10  ./folder-with-code
+```
+
+In a new shell, launch web form for students (e.g., http://172.16.73.132:5000)
+```
+export FLASK_RUN_HOST=0.0.0.0
+export FLASK_RUN_PORT=5000
+flask  --app web_form_app run
+```
+
+In a new shell, get updates about commits from students
+```
+./exams_monitor.sh
+```
+
+To turn off submissions
+```
+./exams_disable.sh
+```
+
+To download all repositories
+```
+./exams_pull_repos.sh
+```
+
+
+To delete everything (DB, flask sessions, code repos)
+```
+./exams_delete.sh
+```
+
+
 # Configuration files
 
 To use these scripts with GitLab, edit `python-gitlab.cfg`:

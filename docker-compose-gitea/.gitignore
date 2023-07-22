@@ -1,0 +1,4 @@
+.idea
+.env
+volumes/gitea*
+docker-gitea.service

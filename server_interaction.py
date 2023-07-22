@@ -126,7 +126,7 @@ class ServerInteractions:
 			return self.server.groups.create({'name': group_name, 'path': group_name})
 
 		elif self.server_choice == "gitea":
-			owner = gitea.User.request(self.server, "rnatella") # query to get the server owner
+			owner = gitea.User.request(self.server, "root") # query to get the server owner
 			self.server.create_org(owner, group_name, group_name)
 			return gitea.Organization.request(self.server, group_name)
 
@@ -264,7 +264,7 @@ class ServerInteractions:
 			return project.members.list(query=project.name)[0]
 
 		elif self.server_choice == "gitea":
-			server_owner = gitea.User.request(self.server, "rnatella")
+			server_owner = gitea.User.request(self.server, "root")
 			users = project.get_users_with_access()
 			for usr in users:
 				if usr != server_owner:

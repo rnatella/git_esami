@@ -110,6 +110,7 @@ try:
 except:
 	print("Top-level group not found, creating new one")
 	group = server.create_group(top_project_group)
+
 try:
 	subgroup = server.get_subgroup(group, project_subgroup)
 except:
@@ -119,6 +120,9 @@ except:
 
 
 for student in students:
+
+	if student["group"] != top_project_group or student["subgroup"] != project_subgroup:
+		continue
 
 	username = student["username"]
 	password = student["password"]
