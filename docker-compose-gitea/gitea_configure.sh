@@ -65,7 +65,7 @@ export $(grep -v '^#' .env | xargs)
 docker-compose up -d
 
 
-sleep 5
+sleep 10
 
 echo "Initial configuration of Gitea server, please wait..."
 

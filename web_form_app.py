@@ -5,6 +5,7 @@ from wtforms import StringField, SelectField, SubmitField
 from wtforms.validators import InputRequired, Regexp
 import datetime
 import sqlite3
+import sys
 
 
 app = Flask(__name__)
@@ -78,7 +79,7 @@ def start():
 
             connection.commit()
 
-            if updated.rowcount == 0:
+            if student_row == None:
                 return "ERRORE: Impossibile accedere al sistema, contattare l'amministratore."
 
             cursor.close()

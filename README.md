@@ -22,7 +22,7 @@ cd docker-compose-gitea/
 cd ..
 ```
 
-Initialize accounts for users
+Initialize accounts for users (e.g., 10 students per classroom, 30 students in total)
 ```
 ./exams_create.sh  esame-2023-07  10  ./folder-with-code
 ```
