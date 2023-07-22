@@ -26,6 +26,7 @@ services:
     ports:
       - "${GITEA_SSH_PORT}:22"
       - "${GITEA_WEB_PORT}:3000"
+      - "3080:3080"
     environment:
       - VIRTUAL_PORT=3000
       - VIRTUAL_HOST=${GITEA_HOSTNAME}

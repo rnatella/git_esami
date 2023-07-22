@@ -42,11 +42,12 @@ class ServerInteractions:
 				cfg = tomli.load(f)
 
 			self.server = gitea.Gitea(gitea_url = cfg['local']['url'],
-				token_text=cfg['local']['token'])
+				token_text=cfg['local']['token'],
+				verify=False)
 
 			parsed_url = urlparse(cfg['local']['url'])
-			self.server_url= parsed_url.netloc
-			self.server_hostname= parsed_url.hostname
+			self.server_url = parsed_url.netloc
+			self.server_hostname = parsed_url.hostname
 			self.protocol = parsed_url.scheme
 
 
@@ -69,7 +70,10 @@ class ServerInteractions:
 			return f"{self.server_url}/{project.path_with_namespace}"
 
 		elif self.server_choice == "gitea":
-			return project.clone_url.replace(f"{self.protocol}://","")
+			parsed_url = urlparse(project.clone_url)
+			scheme = "%s://" % parsed_url.scheme
+			return parsed_url.geturl().replace(scheme, '', 1)
+
 
 	def get_users(self) -> list[Union[gitea.User, any]]:
 
