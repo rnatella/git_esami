@@ -6,11 +6,21 @@ from wtforms.validators import InputRequired, Regexp
 import datetime
 import sqlite3
 import sys
+import os
+from dotenv import load_dotenv
 
 
 app = Flask(__name__)
 
-app.secret_key = 'una stringa qualunque'
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.flaskenv'))
+
+app.secret_key = os.environ.get("SECRET_KEY")
+
+if app.secret_key is None:
+    raise EnvironmentError(f'Environment variable SECRET_KEY has not been set (.flaskenv)')
+
+
 app.config["SESSION_PERMANENT"] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=120)
 app.config['SESSION_TYPE'] = 'filesystem'

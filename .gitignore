@@ -1,6 +1,8 @@
 env
 testrepo
-*.cfg
-*.toml
+python-gitlab.cfg
+gitea.toml
 generated_sheet.docx
 .current_exam.txt
+.flaskenv
+.env
