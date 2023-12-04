@@ -22,7 +22,20 @@ fi
 
 SUBGROUPS=()
 
-for DOCENTE in cinque cotroneo natella
+DOCENTI=
+DOCENTI_CFG=".docenti.txt"
+
+if [ -e ${DOCENTI_CFG} ]
+then
+	DOCENTI=($(cat ${DOCENTI_CFG} | tr ',' '\n'))
+else
+	echo "Error: list of classrooms not found"
+	exit 1
+fi
+
+
+
+for DOCENTE in "${DOCENTI[@]}"
 do
     SUBGROUPS+=("$SUBGROUP_PREFIX-$DOCENTE")
 done
@@ -30,5 +43,5 @@ done
 
 echo "Monitoring: ${SUBGROUPS[@]}"
 
-$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]}
+$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_as_git_server_url
 

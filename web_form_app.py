@@ -7,6 +7,7 @@ import datetime
 import sqlite3
 import sys
 import os
+import csv
 from dotenv import load_dotenv
 
 
@@ -28,7 +29,14 @@ app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
 
-docenti = [ "Cinque", "Cotroneo", "Natella" ]
+docenti = []
+
+try:
+    with open('.docenti.txt', 'r', newline='') as csv_file:
+        docenti = list(csv.reader(csv_file))[0]
+except FileNotFoundError as e:
+    docenti = input("Inserisci lista docenti (comma-separated): ").split(",")
+
 
 
 class FormStudente(FlaskForm):

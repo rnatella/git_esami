@@ -21,7 +21,20 @@ else
 fi
 
 
-for DOCENTE in cinque cotroneo natella
+DOCENTI=
+DOCENTI_CFG=".docenti.txt"
+
+if [ -e ${DOCENTI_CFG} ]
+then
+	DOCENTI=($(cat ${DOCENTI_CFG} | tr ',' '\n'))
+else
+	echo "Error: list of classrooms not found"
+	exit 1
+fi
+
+
+
+for DOCENTE in "${DOCENTI[@]}"
 do
     SUBGROUP="${SUBGROUP_PREFIX}-${DOCENTE}"
 

@@ -142,7 +142,8 @@ class ServerInteractions:
 			return self.server.groups.create({'name': sub_name, 'path': sub_name, 'parent_id' : group.id})
 
 		elif self.server_choice == "gitea":
-			self.server.create_team(group, sub_name)
+			#self.server.create_team(group, sub_name)
+			self.server.create_team(group, sub_name, permission='')#, units='repo.code')
 			return self.get_subgroup(group, sub_name)
 
 
@@ -188,7 +189,7 @@ class ServerInteractions:
 		                    })
 
 		elif self.server_choice == "gitea":
-			group.create_repo(repoName = project_name) # default_branch and readme inizialization are by default in the used module
+			group.create_repo(repoName = project_name, private = True) # default_branch and readme inizialization are by default in the used module
 
 			project = gitea.Repository.request(self.server, owner = group.name, name = project_name)
 
@@ -254,11 +255,23 @@ class ServerInteractions:
 		                })
 
 		elif self.server_choice == "gitea":
-			project.add_branch_protections(data = {"branch_name":"master",
-		    										"enable_push":True,
-		    										"enable_merge_whitelist":True,
-		    										"merge_whitelist_usernames": [whitelist_usr]
-		    										})
+			pass
+			#project.add_branch_protections(data = {"branch_name":"master",
+		    #										"enable_push":True,
+		    #										"enable_merge_whitelist":True,
+		    #										"merge_whitelist_usernames": [whitelist_usr]
+		    #										})
+
+			#url = f"/repos/{project.owner.username}/{project.name}/branch_protections"
+
+			#self.server.requests_put(url, {"branch_name":"master",
+			#								"enable_push":True,
+			#								"enable_merge_whitelist":True,
+			#								"merge_whitelist_usernames": [whitelist_usr]
+			#								})
+
+
+
 
 
 	def get_member(self, project: Union[gitea.Repository, any]) -> Union[gitea.User, any] :

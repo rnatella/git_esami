@@ -13,14 +13,33 @@ PYTHON=${VIRTUAL_ENV}/bin/python3
 
 if [ "$#" -ne 3 ]
 then
-    echo "Usage: $0 <subgroup-name-prefix> <number-of-students-per-classroom> <path-to-code-folder>"
+    echo "Usage: $0 <subgroup-name-prefix> <number-of-students-per-classroom> <path-to-code-folder> [classroom,classroom,...]"
     exit 1
 fi
-
 
 SUBGROUP_PREFIX=$1
 STUDENTS=$2
 REPO_REFERENCE=$3
+DOCENTI=
+
+DOCENTI_CFG=".docenti.txt"
+
+if [ "$4" != "" ]
+then
+	DOCENTI=(${4//,/ })
+
+	echo $4 > ${DOCENTI_CFG}
+else
+
+	if [ -e ${DOCENTI_CFG} ]
+	then
+		DOCENTI=($(cat ${DOCENTI_CFG} | tr ',' '\n'))
+	else
+		echo "Error: list of classrooms not found"
+		exit 1
+	fi
+fi
+
 
 if [[ "${SUBGROUP_PREFIX}" == "" ]]
 then
@@ -44,7 +63,7 @@ fi
 
 echo "${SUBGROUP_PREFIX}" > .current_exam.txt
 
-for DOCENTE in cinque cotroneo natella
+for DOCENTE in "${DOCENTI[@]}"
 do
 
     SUBGROUP="${SUBGROUP_PREFIX}-${DOCENTE}"

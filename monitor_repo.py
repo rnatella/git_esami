@@ -251,6 +251,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--subgroup', nargs='+', help="GitLab subgroup(s)", required=True)
     parser.add_argument('-p', '--webhook_port', default=8000, type=int, help="Webhook port")
     parser.add_argument('-w', '--webhook_path', default="/webhook", help="Webhook path")
+    parser.add_argument('-u', '--webhook_url', help="Webhook URL")
+    parser.add_argument('--webhook_as_git_server_url', action=argparse.BooleanOptionalAction, help="Set webhook URL as the same of the Git server URL")
     parser.add_argument('-b', '--git-platform', default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
     args = parser.parse_args()
@@ -276,7 +278,16 @@ if __name__ == '__main__':
 
     webhook_server_addr = None
 
-    if netaddr.valid_ipv4(server.get_hostname()):
+
+    if args.webhook_as_git_server_url:
+
+        webhook_server_addr = server.get_hostname()
+
+    elif args.webhook_url is not None:
+
+        webhook_server_addr = args.webhook_url
+
+    elif netaddr.valid_ipv4(server.get_hostname()):
 
         # Look for local network interface on this machine
         # that matches the GitLab server IP (e.g., a local virtual machine)
@@ -300,15 +311,16 @@ if __name__ == '__main__':
 
 
                     if server.get_hostname() in ipset:
-                        print(f"GitLab IP '{server.get_url()}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
+                        print(f"Git server IP '{server.get_url()}' match found for IP address '{ip}' on interface '{iface}', subnet '{cidr.network}/{cidr.prefixlen}'")
                         webhook_server_addr = ip
                         break
 
 
+
     if webhook_server_addr is None:
-        print("GitLab server address is not a local IP address.")
-        print("Tunnel not yet implemented, quitting")
-        sys.exit(0)
+        print("Git server address is not a local IP address.")
+        print("Please specify the server IP by the command line.")
+        sys.exit(1)
 
 
     students = {}
@@ -318,16 +330,19 @@ if __name__ == '__main__':
         init_commits(students, top_project_group, project_subgroup)
 
 
-    webhook_url = f'{server.get_protocol()}://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
-
-    print(f"Initializing hook at: {webhook_url}")
-
-    server.create_hook(webhook_url, top_project_group, project_subgroups)
+    #webhook_url = f'{server.get_protocol()}://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
+    webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
 
 
     loop = asyncio.new_event_loop()
     t = Thread(target=flask_loop, args=(loop, HOOK_PATH, HOOK_PORT, students,), daemon=True)
     t.start()
+
+
+    print(f"Initializing hook at: {webhook_url}")
+
+    server.create_hook(webhook_url, top_project_group, project_subgroups)
+
 
     try:
         app = DashboardApp()
