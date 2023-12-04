@@ -38,6 +38,15 @@ except FileNotFoundError as e:
     docenti = input("Inserisci lista docenti (comma-separated): ").split(",")
 
 
+exam = ""
+
+try:
+    with open('.current_exam.txt', 'r', newline='') as csv_file:
+        exam = list(csv.reader(csv_file))[0][0]
+except FileNotFoundError as e:
+    pass
+
+
 
 class FormStudente(FlaskForm):
     cognome = StringField(label='Cognome',
@@ -91,7 +100,7 @@ def start():
 
             timestamp = datetime.datetime.now()
 
-            updated = cursor.execute("UPDATE students SET firstname=?, surname=?, matricola=?, docente=?, activated=? WHERE id=(SELECT id FROM students WHERE activated IS NULL AND INSTR(LOWER(user_subgroup),LOWER(?)) AND enabled=1 LIMIT 1) RETURNING id, username, password, repository_url;", (session["nome"], session["cognome"], session["matricola"], session["docente"], timestamp, session["docente"]))
+            updated = cursor.execute("UPDATE students SET firstname=?, surname=?, matricola=?, docente=?, activated=? WHERE id=(SELECT id FROM students WHERE activated IS NULL AND INSTR(LOWER(user_subgroup),LOWER(?)) AND INSTR(LOWER(user_subgroup),LOWER(?)) AND enabled=1 LIMIT 1) RETURNING id, username, password, repository_url;", (session["nome"], session["cognome"], session["matricola"], session["docente"], timestamp, session["docente"], exam))
 
             student_row = updated.fetchone()
 
