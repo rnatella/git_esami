@@ -9,6 +9,8 @@ import sys
 import os
 import csv
 from dotenv import load_dotenv
+from contextlib import closing
+
 
 
 app = Flask(__name__)
@@ -95,7 +97,6 @@ def start():
             session["docente"] = form.docente.data
 
             connection = connect_db()
-
             cursor = connection.cursor()
 
             timestamp = datetime.datetime.now()
@@ -110,7 +111,6 @@ def start():
                 return "ERRORE: Impossibile accedere al sistema, contattare l'amministratore."
 
             cursor.close()
-
             connection.close()
 
 
@@ -134,19 +134,33 @@ def hello():
         return redirect(url_for('start'))
 
 
-    connection = connect_db()
-    cursor = connection.cursor()
+    #connection = connect_db()
+    #cursor = connection.cursor()
 
-    user = cursor.execute("SELECT count(*) FROM students WHERE id=? AND not activated is NULL AND enabled=1", (session["id"],)).fetchone()[0]
+    with closing(connect_db()) as connection:
+        with closing(connection.cursor()) as cursor:
 
-    connection.close()
+            user = cursor.execute("SELECT count(*) FROM students WHERE id=? AND not activated is NULL AND enabled=1", (session["id"],)).fetchone()[0]
 
-    if user == 0:
-        session.clear()
-        session["__invalidate__"] = True
-        return redirect(url_for('start'))
+    #connection.close()
 
-    return render_template('git.html', id=id)
+            if user == 0:
+                session.clear()
+                session["__invalidate__"] = True
+                return redirect(url_for('start'))
+
+            session["last_commit_msg"] = "N/A"
+            session["last_commit_time"] = ""
+
+            with closing(connection.cursor()) as commit_cursor:
+
+                last_commit = commit_cursor.execute("SELECT message,timestamp FROM commits WHERE project=? ORDER BY timestamp DESC LIMIT 1", (session["username"],)).fetchone()
+
+                if last_commit != None:
+                    session["last_commit_msg"] = last_commit[0]
+                    session["last_commit_time"] = f" ({last_commit[1]})"
+
+            return render_template('git.html', id=id)
 
 
 
@@ -160,7 +174,7 @@ if __name__ == '__main__':
 
     connection = connect_db()
 
-    table_exists = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+    table_exists = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
 
     if table_exists.rowcount() == 0:
         print("Errore: Database non inizializzato")

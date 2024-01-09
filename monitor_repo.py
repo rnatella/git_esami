@@ -15,6 +15,10 @@ import asyncio
 from threading import Thread
 from datetime import datetime
 from server_interaction import ServerInteractions
+import sqlite3
+import time
+from contextlib import closing
+
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -101,6 +105,7 @@ class DashboardApp(App):
     def init_students(self, students: dict):
         self.students = students
 
+
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
@@ -184,7 +189,7 @@ class DashboardApp(App):
 
 
 
-def flask_loop(loop, HOOK_PATH: str, HOOK_PORT: int, students: dict) -> None:
+def flask_loop(loop, HOOK_PATH: str, HOOK_PORT: int, students: dict, students_db: str) -> None:
 
     app = Flask(__name__)
 
@@ -224,13 +229,22 @@ def flask_loop(loop, HOOK_PATH: str, HOOK_PORT: int, students: dict) -> None:
 
                         commit_created_at = commit["timestamp"]
                         commit_committer_name = commit["author"]["name"]
-                        commit_message = commit["message"]
+                        commit_message = commit["message"].rstrip()
 
                         students[project_name]["project"] = project_name
                         students[project_name]["timestamp"] = commit_created_at
                         students[project_name]["author"] = commit_committer_name
                         students[project_name]["commit"] = commit_message
                         students[project_name]["local_timestamp"] = monotonic()
+
+
+            with closing(sqlite3.connect(students_db)) as connection:
+
+                #connection.set_trace_callback(print)
+
+                connection.execute("INSERT INTO commits VALUES(?,?,?,?)", (students[project_name]["project"], students[project_name]["timestamp"], students[project_name]["author"], students[project_name]["commit"]))
+
+                connection.commit()
 
 
             return "OK!"
@@ -251,7 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--subgroup', nargs='+', help="GitLab subgroup(s)", required=True)
     parser.add_argument('-p', '--webhook_port', default=8000, type=int, help="Webhook port")
     parser.add_argument('-w', '--webhook_path', default="/webhook", help="Webhook path")
-    parser.add_argument('-u', '--webhook_url', help="Webhook URL")
+    parser.add_argument('-u', '--webhook_server', help="Webhook server address")
     parser.add_argument('--webhook_as_git_server_url', action=argparse.BooleanOptionalAction, help="Set webhook URL as the same of the Git server URL")
     parser.add_argument('-b', '--git-platform', default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
@@ -283,9 +297,9 @@ if __name__ == '__main__':
 
         webhook_server_addr = server.get_hostname()
 
-    elif args.webhook_url is not None:
+    elif args.webhook_server is not None:
 
-        webhook_server_addr = args.webhook_url
+        webhook_server_addr = args.webhook_server
 
     elif netaddr.valid_ipv4(server.get_hostname()):
 
@@ -330,14 +344,15 @@ if __name__ == '__main__':
         init_commits(students, top_project_group, project_subgroup)
 
 
-    #webhook_url = f'{server.get_protocol()}://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
-    webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
+    db_file="students.db"
 
 
     loop = asyncio.new_event_loop()
-    t = Thread(target=flask_loop, args=(loop, HOOK_PATH, HOOK_PORT, students,), daemon=True)
+    t = Thread(target=flask_loop, args=(loop, HOOK_PATH, HOOK_PORT, students, db_file,), daemon=True)
     t.start()
 
+
+    webhook_url = f'http://{webhook_server_addr}:{HOOK_PORT}{HOOK_PATH}'
 
     print(f"Initializing hook at: {webhook_url}")
 
@@ -348,6 +363,7 @@ if __name__ == '__main__':
         app = DashboardApp()
         app.init_students(students)
         app.run()
+        #time.sleep(300)
     except KeyboardInterrupt:
         print("Bye!")
 

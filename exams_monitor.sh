@@ -40,8 +40,11 @@ do
     SUBGROUPS+=("$SUBGROUP_PREFIX-$DOCENTE")
 done
 
+GITEA_CONTAINER=$(docker ps -aqf "name=gitea-app")
+GITEA_GATEWAY=$(docker inspect  -f '{{range.NetworkSettings.Networks}}{{println .Gateway}}{{end}}' ${GITEA_CONTAINER} |head -1)
 
 echo "Monitoring: ${SUBGROUPS[@]}"
 
-$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_as_git_server_url
+#$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_as_git_server_url
+$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_server="${GITEA_GATEWAY}"
 

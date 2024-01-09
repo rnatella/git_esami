@@ -40,6 +40,16 @@ class StudentsDB:
 
             self.connection.execute(create_table)
 
+            create_table_commits = """
+                            CREATE TABLE commits (
+                                project         VARCHAR(255) NOT NULL,
+                                timestamp       TIMESTAMP,
+                                committer       VARCHAR(255) NOT NULL,
+                                message         VARCHAR(255) NOT NULL
+                            ); """
+
+            self.connection.execute(create_table_commits)
+
     def __del__(self):
         self.connection.close()
 

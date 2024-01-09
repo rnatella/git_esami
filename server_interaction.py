@@ -219,7 +219,31 @@ class ServerInteractions:
 		elif self.server_choice == "gitea":
 			group = gitea.Organization.request(self.server, top_name)
 			subgroup = group.get_team(sub_name)
-			return subgroup.get_repos()
+			#return subgroup.get_repos()
+
+			projects = []
+			page = 1
+
+			while page != -1:
+
+				url = f"/teams/{subgroup.id}/repos?page={page}&limit=50"
+
+				results = self.server.requests_get(url)
+
+				if len(results) > 0:
+
+					#for result in results:
+					#	print(gitea.Repository.parse_response(self.server, result).get_full_name())
+
+					projects += [gitea.Repository.parse_response(self.server, result) for result in results]
+					page += 1
+
+				else:
+
+					# break loop
+					page = -1
+
+			return projects
 
 
 
