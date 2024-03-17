@@ -69,6 +69,20 @@ echo "GITEA_BASE_URL=${GITEA_BASE_URL}" >> .env
 
 GITEA_TOML="$( dirname -- "$BASH_SOURCE"; )/../gitea.toml"
 
+if [ ! -e $"{GITEA_TOML}" ]
+then
+
+cat << EOF > ${GITEA_TOML}
+[global]
+default = "local"
+
+[local]
+url = 'https://0.0.0.0:3000'
+token = '<TOKEN>'
+EOF
+
+fi
+
 echo "Updating Gitea client configuration (${GITEA_TOML})..."
 
 perl -p -i -e 'if(/^url/)   { s|'\''.*'\''|'\'"${GITEA_BASE_URL}"\''| }' $GITEA_TOML
