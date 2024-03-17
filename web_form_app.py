@@ -9,6 +9,7 @@ import sys
 import os
 import csv
 import urllib.parse
+import socket
 from dotenv import load_dotenv
 from contextlib import closing
 
@@ -54,6 +55,7 @@ def replace_url():
                                                ).geturl()
 
 
+default_subgroup = ""
 
 subgroups = []
 
@@ -109,7 +111,7 @@ def start():
 
     else:
 
-        form = FormStudente()
+        form = FormStudente(gruppo=default_subgroup)
 
         if form.validate_on_submit():
 
@@ -191,34 +193,34 @@ def hello():
 
 
 
+
+connection = connect_db()
+
+table_exists = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
+
+if not table_exists:
+    print("Errore: Database non inizializzato")
+    sys.exit(1)
+
+
+default_subgroup = connection.execute("SELECT DISTINCT user_subgroup FROM students LIMIT 1").fetchall()[0][0]
+
+connection.close()
+
+
+
+if not app.server_ip is None:
+
+   try:
+       socket.inet_aton(app.server_ip)
+   except e:
+       print("Invalid address in SERVER_IP environment variable.")
+       sys.exit(1)
+
+
+
 if __name__ == '__main__':
-
-    connection = connect_db()
-
-    table_exists = connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
-
-    if table_exists.rowcount() == 0:
-        print("Errore: Database non inizializzato")
-        sys.exit(1)
-
-    connection.close()
-
-
-    host_url = "0.0.0.0"
-
-    if not app.server_ip is None:
-
-       try:
-           socket.inet_aton(app.server_ip)
-       except:
-           print("Invalid address in SERVER_IP environment variable.")
-           sys.exit(1)
-
-       host_url = app.server_ip
-
-
-
-    #app.run(debug = True, host=host_url)
-    app.run(host=host_url)
+    #app.run(debug = True, host="0.0.0.0")
+    app.run(host="0.0.0.0")
 
 
