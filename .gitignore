@@ -1,8 +1,10 @@
+__pycache__
 env
 testrepo
 python-gitlab.cfg
 gitea.toml
 generated_sheet.docx
-.current_exam.txt
 .flaskenv
+flask_session
 .env
+*.db
