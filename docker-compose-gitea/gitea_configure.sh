@@ -41,7 +41,16 @@ GITEA_ADMIN_USERNAME="root"
 read -p "Enter Gitea admin password: " -s GITEA_ADMIN_PASSWORD
 echo
 
-read -p "Enter Gitea hostname (e.g., public IP): " GITEA_HOSTNAME
+if [ "${GITEA_ADMIN_PASSWORD}" == "" ]
+then
+	echo "You need to enter a password."
+	exit 1
+fi
+
+
+
+read -p "Enter Gitea hostname (default=0.0.0.0): " GITEA_HOSTNAME
+GITEA_HOSTNAME=${GITEA_HOSTNAME:-"0.0.0.0"}
 
 read -p "Enter Gitea port (default=3000): " GITEA_PORT
 GITEA_PORT=${GITEA_PORT:-3000}
@@ -85,7 +94,7 @@ fi
 
 echo "Initial configuration of Gitea server, please wait..."
 
-curl ${CURL_OPTIONS} -s ${GITEA_BASE_URL} -X POST  -H 'Content-Type: application/x-www-form-urlencoded' --data-raw 'db_type=mysql&db_host=db%3A3306&db_user='"${MYSQL_USER}"'&db_passwd='"${MYSQL_PASSWORD}"'&db_name='"${MYSQL_DATABASE}"'&ssl_mode=disable&charset=utf8mb4&db_schema=&db_path=%2Fdata%2Fgitea%2Fgitea.db&app_name=Gitea%3A+Git+with+a+cup+of+tea&repo_root_path=%2Fdata%2Fgit%2Frepositories&lfs_root_path=%2Fdata%2Fgit%2Flfs&run_user=git&domain='"${GITEA_HOSTNAME}"'&ssh_port=22&http_port='"${GITEA_PORT}"'&app_url='"${GITEA_PROTOCOL}"'%3A%2F%2F'"${GITEA_HOSTNAME}"'%3A'"${GITEA_PORT}"'%2F&log_root_path=%2Fdata%2Fgitea%2Flog&smtp_addr=&smtp_port=&smtp_from=&smtp_user=&smtp_passwd=&offline_mode=on&disable_gravatar=on&disable_registration=on&default_keep_email_private=on&no_reply_address=noreply.localhost&password_algorithm=pbkdf2&admin_name='"${GITEA_ADMIN_USERNAME}"'&admin_email=admin%40example.com&admin_passwd='"${GITEA_ADMIN_PASSWORD}"'&admin_confirm_passwd='"${GITEA_ADMIN_PASSWORD}"'' #-o /dev/null -s -w "%{http_code}\n"
+curl ${CURL_OPTIONS} -s ${GITEA_BASE_URL} -X POST  -H 'Content-Type: application/x-www-form-urlencoded' --data-raw 'db_type=mysql&db_host=db%3A3306&db_user='"${MYSQL_USER}"'&db_passwd='"${MYSQL_PASSWORD}"'&db_name='"${MYSQL_DATABASE}"'&ssl_mode=disable&charset=utf8mb4&db_schema=&db_path=%2Fdata%2Fgitea%2Fgitea.db&app_name=Gitea%3A+Git+with+a+cup+of+tea&repo_root_path=%2Fdata%2Fgit%2Frepositories&lfs_root_path=%2Fdata%2Fgit%2Flfs&run_user=git&domain='"${GITEA_HOSTNAME}"'&ssh_port=22&http_port='"${GITEA_PORT}"'&app_url='"${GITEA_PROTOCOL}"'%3A%2F%2F'"${GITEA_HOSTNAME}"'%3A'"${GITEA_PORT}"'%2F&log_root_path=%2Fdata%2Fgitea%2Flog&smtp_addr=&smtp_port=&smtp_from=&smtp_user=&smtp_passwd=&offline_mode=on&disable_gravatar=on&disable_registration=on&default_keep_email_private=on&no_reply_address=noreply.localhost&password_algorithm=pbkdf2&admin_name='"${GITEA_ADMIN_USERNAME}"'&admin_email=admin%40example.com&admin_passwd='"${GITEA_ADMIN_PASSWORD}"'&admin_confirm_passwd='"${GITEA_ADMIN_PASSWORD}"'' -o /dev/null -s -w "%{http_code}\n"
 
 if [ $? -ne 0 ]
 then

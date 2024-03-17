@@ -24,7 +24,7 @@
          <div class="error">Errore: {{ message }}</div>
       {% endfor %}
 
-      {% for message in form.docente.errors %}
+      {% for message in form.gruppo.errors %}
          <div class="error">Errore: {{ message }}</div>
       {% endfor %}
 
@@ -42,8 +42,8 @@
                {{ form.matricola.label }}<br>
                {{ form.matricola }}
                <br><br>
-               {{ form.docente.label}}<br>
-               {{ form.docente }}
+               {{ form.gruppo.label}}<br>
+               {{ form.gruppo }}
                <br><br>
                {{ form.submit }}
             </div>

@@ -24,7 +24,7 @@ parser.add_argument('-r', '--repo', help="Folder where to create local repos")
 parser.add_argument('-f', '--ref', help="Folder with reference code", required=True)
 parser.add_argument('-p', '--prefix', default="student-", help="Prefix for student repos")
 parser.add_argument('-l', '--password-length', type=int, default=8, help="Length for randomly-generated passwords")
-parser.add_argument('-d', '--api-delay', type=int, default=5, help="Delay (in seconds) between API calls")
+parser.add_argument('-d', '--api-delay', type=int, default=1, help="Delay (in seconds) between API calls")
 parser.add_argument('-b', '--git-platform', type=str, default="gitea", help="Git platform, either 'gitlab' or 'gitea'")
 
 
@@ -116,6 +116,33 @@ try:
 except:
 	print("Sub-group not found, creating new one")
 	subgroup = server.create_subgroup(group, project_subgroup)
+
+
+if not ".gitignore" in os.listdir(reference_path):
+
+    with open(os.path.join(reference_path, ".gitignore"), "w") as gitignore:
+
+        gitignore.write("*.o\n")
+        gitignore.write("*.pdf\n")
+        gitignore.write("*~\n")
+
+        if "Makefile" in os.listdir(reference_path):
+
+            with open(os.path.join(reference_path, "Makefile")) as makefile:
+
+                p = re.compile("^(\w+):")
+
+                for line in makefile:
+
+                    match = p.match(line)
+                    
+                    if match:
+
+                        rulename = match.group(1)
+
+                        if rulename != "all" and rulename != "clean":
+                            
+                            gitignore.write(rulename+"\n")
 
 
 

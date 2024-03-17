@@ -8,6 +8,7 @@ import sqlite3
 import sys
 import os
 import csv
+import urllib.parse
 from dotenv import load_dotenv
 from contextlib import closing
 
@@ -30,23 +31,44 @@ app.config['SESSION_TYPE'] = 'filesystem'
 
 Session(app)
 
-
-docenti = []
-
-try:
-    with open('.docenti.txt', 'r', newline='') as csv_file:
-        docenti = list(csv.reader(csv_file))[0]
-except FileNotFoundError as e:
-    docenti = input("Inserisci lista docenti (comma-separated): ").split(",")
+def connect_db():
+    db_file="students.db"
+    connection = sqlite3.connect(db_file)
+    return connection
 
 
-exam = ""
 
-try:
-    with open('.current_exam.txt', 'r', newline='') as csv_file:
-        exam = list(csv.reader(csv_file))[0][0]
-except FileNotFoundError as e:
-    pass
+app.server_ip = os.environ.get("SERVER_IP")
+
+def replace_url():
+
+    if not app.server_ip is None:
+
+        parsed_url = urllib.parse.urlparse(session["repository_url"])
+
+        session["repository_url"] = parsed_url._replace(netloc="{}:{}@{}:{}".format(
+                                                                parsed_url.username, 
+                                                                parsed_url.password, 
+                                                                app.server_ip, 
+                                                                parsed_url.port)
+                                               ).geturl()
+
+
+
+subgroups = []
+
+with closing(connect_db()) as connection:
+    with closing(connection.cursor()) as cursor:
+
+        subgroups_count = cursor.execute("SELECT DISTINCT user_subgroup FROM students ORDER BY user_subgroup ASC")
+
+        if subgroups_count == 0:
+            print("Errore: Database non inizializzato")
+            sys.exit(1)
+
+        for i,row in enumerate(cursor.fetchall()):
+            subgroups.append(row[0])
+
 
 
 
@@ -69,8 +91,8 @@ class FormStudente(FlaskForm):
                            Regexp('^N46\d{6}$', message="Inserire la matricola, in formato N46xxxxxx (6 cifre)")
                        ])
 
-    docente = SelectField(label='Docente',
-                       choices=list(zip(docenti,docenti)),
+    gruppo = SelectField(label='Gruppo',
+                       choices=list(zip(subgroups,subgroups)),
                        validators=[
                            InputRequired()
                        ])
@@ -94,21 +116,21 @@ def start():
             session["cognome"] = form.cognome.data
             session["nome"] = form.nome.data
             session["matricola"] = form.matricola.data
-            session["docente"] = form.docente.data
+            session["gruppo"] = form.gruppo.data
 
             connection = connect_db()
             cursor = connection.cursor()
 
             timestamp = datetime.datetime.now()
 
-            updated = cursor.execute("UPDATE students SET firstname=?, surname=?, matricola=?, docente=?, activated=? WHERE id=(SELECT id FROM students WHERE activated IS NULL AND INSTR(LOWER(user_subgroup),LOWER(?)) AND INSTR(LOWER(user_subgroup),LOWER(?)) AND enabled=1 LIMIT 1) RETURNING id, username, password, repository_url;", (session["nome"], session["cognome"], session["matricola"], session["docente"], timestamp, session["docente"], exam))
+            updated = cursor.execute("UPDATE students SET firstname=?, surname=?, matricola=?, activated=? WHERE id=(SELECT id FROM students WHERE activated IS NULL AND INSTR(LOWER(user_subgroup),LOWER(?)) AND enabled=1 LIMIT 1) RETURNING id, username, password, repository_url;", (session["nome"], session["cognome"], session["matricola"], timestamp, session["gruppo"]))
 
             student_row = updated.fetchone()
 
             connection.commit()
 
             if student_row == None:
-                return "ERRORE: Impossibile accedere al sistema, contattare l'amministratore."
+                return "ERRORE: Impossibile accedere al sistema, contattare il docente."
 
             cursor.close()
             connection.close()
@@ -118,6 +140,8 @@ def start():
             session["username"] = student_row[1]
             session["password"] = student_row[2]
             session["repository_url"] = student_row[3]
+
+            replace_url()
 
             return redirect(url_for('hello'))
 
@@ -149,7 +173,7 @@ def hello():
                 session["__invalidate__"] = True
                 return redirect(url_for('start'))
 
-            session["last_commit_msg"] = "N/A"
+            session["last_commit_msg"] = "Nessuno"
             session["last_commit_time"] = ""
 
             with closing(connection.cursor()) as commit_cursor:
@@ -160,14 +184,11 @@ def hello():
                     session["last_commit_msg"] = last_commit[0]
                     session["last_commit_time"] = f" ({last_commit[1]})"
 
+            replace_url()
+
             return render_template('git.html', id=id)
 
 
-
-def connect_db():
-    db_file="students.db"
-    connection = sqlite3.connect(db_file)
-    return connection
 
 
 if __name__ == '__main__':
@@ -182,7 +203,22 @@ if __name__ == '__main__':
 
     connection.close()
 
-    #app.run(debug = True, host="0.0.0.0")
-    app.run(host="0.0.0.0")
+
+    host_url = "0.0.0.0"
+
+    if not app.server_ip is None:
+
+       try:
+           socket.inet_aton(app.server_ip)
+       except:
+           print("Invalid address in SERVER_IP environment variable.")
+           sys.exit(1)
+
+       host_url = app.server_ip
+
+
+
+    #app.run(debug = True, host=host_url)
+    app.run(host=host_url)
 
 

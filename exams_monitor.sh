@@ -9,36 +9,24 @@ fi
 PYTHON=${VIRTUAL_ENV}/bin/python3
 
 
-
-SUBGROUP_PREFIX=
-
-if [[ -e .current_exam.txt ]]
-then
-    SUBGROUP_PREFIX=$(cat .current_exam.txt)
-else
-    echo "Enter subgroup prefix string (es. esame-2023-07): "
-    read SUBGROUP_PREFIX
-fi
+SUBGROUPS_STR=$1
 
 SUBGROUPS=()
 
-DOCENTI=
-DOCENTI_CFG=".docenti.txt"
 
-if [ -e ${DOCENTI_CFG} ]
+if [ "${SUBGROUPS_STR}" != "" ]
 then
-	DOCENTI=($(cat ${DOCENTI_CFG} | tr ',' '\n'))
+	for SUBGROUP in ${SUBGROUPS_STR//,/ }
+	do
+		SUBGROUPS+=("${SUBGROUP}")
+	done
+
 else
-	echo "Error: list of classrooms not found"
-	exit 1
+
+	SUBGROUPS=($(./exams_list.sh))
 fi
 
 
-
-for DOCENTE in "${DOCENTI[@]}"
-do
-    SUBGROUPS+=("$SUBGROUP_PREFIX-$DOCENTE")
-done
 
 GITEA_CONTAINER=$(docker ps -aqf "name=gitea-app")
 GITEA_GATEWAY=$(docker inspect  -f '{{range.NetworkSettings.Networks}}{{println .Gateway}}{{end}}' ${GITEA_CONTAINER} |head -1)

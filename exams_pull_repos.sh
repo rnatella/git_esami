@@ -9,34 +9,26 @@ fi
 PYTHON=${VIRTUAL_ENV}/bin/python3
 
 
+SUBGROUPS_STR=$1
 
-SUBGROUP_PREFIX=
+SUBGROUPS=()
 
-if [[ -e .current_exam.txt ]]
+
+if [ "${SUBGROUPS_STR}" != "" ]
 then
-    SUBGROUP_PREFIX=$(cat .current_exam.txt)
+	for SUBGROUP in ${SUBGROUPS_STR//,/ }
+	do
+		SUBGROUPS+=("${SUBGROUP}")
+	done
+
 else
-    echo "Enter subgroup prefix string (es. esame-2023-07): "
-    read SUBGROUP_PREFIX
+
+	SUBGROUPS=($(./exams_list.sh))
 fi
 
 
-DOCENTI=
-DOCENTI_CFG=".docenti.txt"
-
-if [ -e ${DOCENTI_CFG} ]
-then
-	DOCENTI=($(cat ${DOCENTI_CFG} | tr ',' '\n'))
-else
-	echo "Error: list of classrooms not found"
-	exit 1
-fi
-
-
-
-for DOCENTE in "${DOCENTI[@]}"
+for SUBGROUP in "${SUBGROUPS[@]}"
 do
-    SUBGROUP="${SUBGROUP_PREFIX}-${DOCENTE}"
 
     echo "Pulling repos: $SUBGROUP"
 

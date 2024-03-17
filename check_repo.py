@@ -192,6 +192,28 @@ for project in projects:
 
         project_local_path = os.path.join(local_path,project_name)
 
+        project_local_path_studentname = None
+
+
+        if rename_projects:
+
+            student_info = students.get_user_info(project_name)
+            #print(student_info)
+
+            if student_info["activated"] and (not student_info["surname"] is None) and (not student_info["firstname"] is None) and (not student_info["matricola"] is None):
+
+                project_local_path_studentname = os.path.join(local_path, f"{student_info['surname'].lower()}-{student_info['firstname'].lower()}-{student_info['matricola']}")
+
+
+                if os.path.exists(project_local_path):
+
+                    os.rename(project_local_path, project_local_path_studentname)
+
+
+                project_local_path = project_local_path_studentname
+
+
+
         if os.path.exists(project_local_path):
 
             print(f"Pulling local repo for '{project_name}'")
@@ -219,15 +241,5 @@ for project in projects:
 
             repo = Repo.clone_from(repository_url, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
 
-        if rename_projects:
-
-            student_info = students.get_user_info(project_name)
-            #print(student_info)
-
-            if student_info["activated"] and (not student_info["surname"] is None) and (not student_info["firstname"] is None) and (not student_info["matricola"] is None):
-
-                new_folder = os.path.join(local_path, f"{student_info['surname'].lower()}-{student_info['firstname'].lower()}-{student_info['matricola']}")
-
-                os.rename(project_local_path, new_folder)
 
 

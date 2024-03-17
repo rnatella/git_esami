@@ -11,7 +11,7 @@ PYTHON=${VIRTUAL_ENV}/bin/python3
 
 
 
-if [ "$#" -ne 3 ]
+if [ "$#" -lt 3 ]
 then
     echo "Usage: $0 <subgroup-name-prefix> <number-of-students-per-classroom> <path-to-code-folder> [classroom,classroom,...]"
     exit 1
@@ -20,25 +20,7 @@ fi
 SUBGROUP_PREFIX=$1
 STUDENTS=$2
 REPO_REFERENCE=$3
-DOCENTI=
-
-DOCENTI_CFG=".docenti.txt"
-
-if [ "$4" != "" ]
-then
-	DOCENTI=(${4//,/ })
-
-	echo $4 > ${DOCENTI_CFG}
-else
-
-	if [ -e ${DOCENTI_CFG} ]
-	then
-		DOCENTI=($(cat ${DOCENTI_CFG} | tr ',' '\n'))
-	else
-		echo "Error: list of classrooms not found"
-		exit 1
-	fi
-fi
+SUBGROUPS_STR=$4
 
 
 if [[ "${SUBGROUP_PREFIX}" == "" ]]
@@ -54,19 +36,30 @@ then
     exit 1
 fi
 
-if [[ ! -d $REPO_REFERENCE ]]
+if [[ ! -d ${REPO_REFERENCE} ]]
 then
     echo "Third parameter should be valid path of folder with code"
     exit 1
 fi
 
+SUBGROUPS=()
 
-echo "${SUBGROUP_PREFIX}" > .current_exam.txt
+if [ "${SUBGROUPS_STR}" != "" ]
+then
+	for SUBGROUP in ${SUBGROUPS_STR//,/ }
+	do
+		SUBGROUPS+=("${SUBGROUP_PREFIX}-${SUBGROUP}")
+	done
 
-for DOCENTE in "${DOCENTI[@]}"
+else
+	SUBGROUPS=("${SUBGROUP_PREFIX}")
+fi
+
+
+
+
+for SUBGROUP in "${SUBGROUPS[@]}"
 do
-
-    SUBGROUP="${SUBGROUP_PREFIX}-${DOCENTE}"
 
     echo
     echo "Initializing subgroup: $SUBGROUP"

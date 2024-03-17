@@ -43,8 +43,12 @@
 
       <br/><br/>
 
-      <b>Username git:</b> {{ session.username }}<br/>
-      <b>Password git:</b> {{ session.password }}<br/>
+      <details>
+	<summary>Informazioni avanzate</summary>
+        <b>Username git:</b> {{ session.username }}<br/>
+        <b>Password git:</b> {{ session.password }}<br/>
+        <b>Gruppo:</b> {{ session.gruppo }}<br/>
+      </details>
 
    </body>
 </html>
