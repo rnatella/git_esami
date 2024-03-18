@@ -15,6 +15,7 @@
       <font><b>Cognome:</b> {{ session.cognome }}</font>
       <font><b>Nome:</b> {{ session.nome }}</font>
       <font><b>Matricola:</b> {{ session.matricola }}</font>
+      <font><b>Gruppo:</b> {{ session.gruppo }}</font>
       <br/><br/>
 
 
@@ -24,7 +25,11 @@
 
       <code>
          export GIT_SSL_NO_VERIFY=1<br/>
-         git clone {{ session.repository_url }}
+	 git clone {{ session.repository_url }}<br/>
+	 cd {{ session.username }}<br/>
+	 git config user.name "{{ session.cognome }} {{ session.nome }} {{ session.matricola }}"<br/>
+	 git config user.email "studente@example.com"<br/>
+	 git config http.sslVerify false
       </code>
 
       <br/><br/>
@@ -32,9 +37,9 @@
       Per la consegna, utilizzare i seguenti comandi:
 
       <code>
-         export GIT_SSL_NO_VERIFY=1<br/>
+         ... posizionarsi nella cartella {{ session.username }} ...<br/>
          git add --all<br/>
-         git commit -m "Soluzione Cognome Nome"<br/>
+	 git commit -m "Soluzione {{ session.cognome }} {{ session.nome }}"<br/>
          git push<br/>
       </code>
 
@@ -47,7 +52,6 @@
 	<summary>Informazioni avanzate</summary>
         <b>Username git:</b> {{ session.username }}<br/>
         <b>Password git:</b> {{ session.password }}<br/>
-        <b>Gruppo:</b> {{ session.gruppo }}<br/>
       </details>
 
    </body>
