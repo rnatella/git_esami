@@ -1,4 +1,46 @@
-# Setup
+# PMGC (Poor Man's Git Classroom)
+
+Questo tool è una collezione di script e di configurazioni per attivare un server Git per la gestione degli esami.
+
+![Overview](/images/overview.png)
+
+
+Lo studente accede a un form web, ed inserisce i propri dati (cognome, nome, matricola). Su indicazione del docente, lo studente inserisce anche il gruppo di esame a cui partecipa (ad esempio, per dividere gli studenti per docenti, oppure per dare tracce diverse).
+
+![Demo form](/images/demo-form.png)
+
+
+
+Lo studente riceve in risposta un account (es. student-10, con password casuale) per accedere al server git. Ogni account dispone di 1 repository, con lo stesso nome dell'utente (es. student-10).
+
+Lo studente riceve inoltre i comandi dettagliati per
+- scaricare in locale il repository, e configurarlo
+- salvare le modifiche sul server
+
+![Demo git](/images/demo-git.png)
+
+
+La sessione sul web form dura 2 ore. Lo studente può riavviare il suo browser o il suo computer. Il token di sessione è salvato sul filesystem, nella cartella `flask_session`, con chiave generata casualmente al primo avvio del web form, e salvata nel file `.flaskenv`.
+
+Prima di iniziare gli esami, il docente deve creare preliminarmente gli account. È sufficiente indicare quali gruppi creare, e quanti account creare per ogni gruppo. Non è richiesto (anche se è possibile) inserire preliminarmente i dati degli studenti, perché saranno loro a inserire i loro dati nel form web. 
+
+Sono forniti i seguenti script per la gestione degli account e dei repository:
+- **docker-compose-gitea/gitea_configure.sh**: Crea dei container per il server Gitea e relativo dabatase MySQL.
+- **docker-compose-gitea/gitea_token.sh**: Ottiene un token per l'accesso alle API Gitea (salvato in **gitea.toml**).
+- **docker-compose-gitea/gitea_https.sh**: Abilita il supporto a HTTPS in Gitea (con certificato self-signed).
+- **exams_create.sh**: Crea gli utenti sia per il form web (database SQLite in **students.db**), sia per il server Gitea (database MySQL).
+- **exams_web_form.sh**: Lancia una app Flask che fornisce l'accesso iniziale agli studenti.
+- **exams_disable.sh**: Disabilita il push di commit per tutti i gruppi, o per uno specifico gruppo.
+- **exams_enable.sh**: Abilita il push di commit.
+- **exams_list.sh**: Elenca i gruppi.
+- **exams_monitor.sh**: Mostra in tempo reale i commit degli studenti.
+- **exams_pull_repos.sh**: Scarica (o aggiorna) in locale i repository degli studenti.
+- **exams_delete.sh**: Rimuove tutto (container, DB, repositories, etc.)
+
+
+# Quick tutorial
+
+Configure Python environment
 
 ```
 $ python3 -m venv env
@@ -6,7 +48,6 @@ $ source env/bin/activate
 $ pip install -r requirements.txt
 ```
 
-# Quick tutorial
 
 Deploy local Gitea+MariaDB server
 
@@ -15,36 +56,33 @@ cd docker-compose-gitea/
 
 ./gitea_configure.sh
 ...enter admin password...
-...enter public IP address...
+...you can leave "0.0.0.0" (default) as server address...
+...you can leave 3000 (default) as port...
 
 ./gitea_token.sh
 
+./gitea_https.sh
+
 cd ..
 ```
 
-To enable HTTPS in Gitea
-```
-cd docker-compose-gitea/
-./gitea_https.sh
-cd ..
-```
 
 
 Initialize accounts for users (e.g., 10 students per classroom, 30 students in total)
 ```
-./exams_create.sh  esame-2023-07  10  ./folder-with-code
+./exams_create.sh  esame-2023-07  10  ./folder-with-code  gruppo1,gruppo2,gruppo3
 ```
 
-In a new shell, launch web form for students (e.g., http://172.16.73.132:5000)
+In a new shell, launch the web form. You can configure here the IP address of the server (environment variable `SERVER_IP`), students will get it through the web form.
 ```
-export FLASK_RUN_HOST=0.0.0.0
-export FLASK_RUN_PORT=5000
-echo "SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)" > .flaskenv
-flask  --app web_form_app run
+source env/bin/activate
+export SERVER_IP="1.2.3.4"
+./exams_web_form.sh
 ```
 
-In a new shell, get updates about commits from students
+In a new shell, get updates in real-time about commits from students
 ```
+source env/bin/activate
 ./exams_monitor.sh
 ```
 
@@ -65,103 +103,5 @@ To delete everything (DB, flask sessions, code repos)
 ```
 
 
-# Configuration files
 
-To use these scripts with GitLab, edit `python-gitlab.cfg`:
-```
-[global]
-default = local
-
-[local]
-url = https://172.16.73.132
-private_token = <TOKEN>
-```
-
-To create a token, go to "User Settings" by clicking on "Preferences" under user icon, then go to "Access Tokens", then create a new token with all scopes enabled.
-
-Shortcut: (https://172.16.73.132/-/profile/personal_access_tokens)
-
-To use these scripts with Gitea, edit `gitea.toml`:
-```
-[global]
-default = "local"
-
-[local]
-url = 'http://127.0.0.1:3000'
-token = '<TOKEN>'
-```
-
-To use webhooks, you need to add in `conf/app.ini`:
-```
-[webhook]
-ALLOWED_HOST_LIST = *
-```
-
-# Generate users and repositories
-
-```
-$ python3 create_repo.py -i ~/Downloads/studenti.xlsx  --subgroup mysubgroup --repo ./testrepo/ --ref ./testrepo/reference/
-```
-
-
-# Enable/disable user permissions
-
-```
-$ python3 enable_users.py --disable --subgroup mysubgroup
-$ python3 enable_users.py --enable --subgroup mysubgroup
-```
-
-
-# Check/pull last commit
-
-Get info about HEAD commit in each repository, **by group/subgroup**:
-```
-$ python3 check_repo.py -i ~/Downloads/studenti.xlsx -s mysubgroup
-```
-
-Get info about HEAD commit in each repository, **from XLSX list**:
-```
-$ python3 check_repo.py -i ~/Downloads/studenti.xlsx
-```
-
-Get info about HEAD commit for a **specific user**:
-```
-$ python3 check_repo.py -u student-123
-```
-
-**Pull** HEAD commit on local repository:
-```
-$ python3 check_repo.py -s mysubgroup  --pull -r ./testrepo/
-```
-
-
-# Delete users
-
-```
-$ python3 remove_users.py -i ~/Downloads/studenti.xlsx
-```
-
-
-# Delete groups
-
-Groups can be deleted from GitLab dashboard.
-
-Shortcut: (https://172.16.73.132/admin/groups)
-
-
-# Generate sheet with credentials
-
-Generate sheet from multiple XLSX files, by **replacing domain** within Git repository URL:
-```
-$ python3 generate_sheet.py -i ~/Downloads/gruppo*.xlsx -t template/template.docx  -o generated_sheet.docx  --replace_domain 192.168.2.1
-```
-
-
-# Web user interface (students get username/password)
-
-```
-export FLASK_RUN_HOST=0.0.0.0
-export FLASK_RUN_PORT=5000
-flask  --app web_form_app run
-```
 
