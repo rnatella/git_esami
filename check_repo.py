@@ -173,8 +173,13 @@ if project_subgroup is not None:
         projects.append(server.parse_project(project))
 
 
+student_ids = {}
+
 
 for project in projects:
+
+    project_name = project.name
+
 
     try:
         commit = server.get_last_commit(project)
@@ -186,23 +191,39 @@ for project in projects:
 
 
 
+    commit_msg = commit.commit["message"].rstrip()
+
+    if commit_msg == "Initial commit":
+        continue
+
+    print(f'{project_name}:\t{commit_msg}')
+
+
+
     if pull_enabled is True:
 
-        project_name = project.name
-
         project_local_path = os.path.join(local_path,project_name)
-
-        project_local_path_studentname = None
 
 
         if rename_projects:
 
             student_info = students.get_user_info(project_name)
-            #print(student_info)
 
             if student_info["activated"] and (not student_info["surname"] is None) and (not student_info["firstname"] is None) and (not student_info["matricola"] is None):
 
                 project_local_path_studentname = os.path.join(local_path, f"{student_info['surname'].lower()}-{student_info['firstname'].lower()}-{student_info['matricola']}")
+
+
+                # check if there are multiple accounts for the same student
+                # (for example, the student moved to another computer during the exam)
+                if student_info["matricola"] in student_ids:
+
+                    student_ids[student_info["matricola"]] = student_ids[student_info["matricola"]] + 1
+
+                    project_local_path_studentname += f'-{student_ids[student_info["matricola"]]}'
+
+                else:
+                    student_ids[student_info["matricola"]] = 1
 
 
                 if os.path.exists(project_local_path):
@@ -216,7 +237,7 @@ for project in projects:
 
         if os.path.exists(project_local_path):
 
-            print(f"Pulling local repo for '{project_name}'")
+            #print(f"Pulling local repo for '{project_name}'")
 
             repo = Repo(project_local_path)
 
@@ -237,7 +258,7 @@ for project in projects:
 
             repository_url = f"{protocol}://{username}:{password}@{project_remote_path}"
 
-            print(f"Cloning from {repository_url}")
+            #print(f"Cloning from {repository_url}")
 
             repo = Repo.clone_from(repository_url, project_local_path, env={'GIT_SSL_NO_VERIFY': '1'})
 

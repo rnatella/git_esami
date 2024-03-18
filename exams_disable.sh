@@ -29,7 +29,7 @@ fi
 
 for SUBGROUP in "${SUBGROUPS[@]}"
 do
-    echo "Enabling: $SUBGROUP"
+    echo "Disabling: $SUBGROUP"
 
     $PYTHON enable_users.py --disable --subgroup $SUBGROUP
 done
