@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+   <head>
+   <style>
+      .error {
+         color:red;
+         font-weight:bold;
+         margin:0px 0px 10px;
+      }
+   </style>
+   </head>
+   <body>
+      <h2>Registration Form</h2>
+
+      
+
+      
+
+      
+
+      
+
+      <form action="/" method="POST">
+
+            <input id="csrf_token" name="csrf_token" type="hidden" value="">
+
+            <div style = "font-size:18px;" font-weight:bold; margin-left:150px;>
+               <label for="cognome">Cognome</label><br>
+               <input id="cognome" name="cognome" required type="text" value="">
+               <br><br>
+               <label for="nome">Nome</label><br>
+               <input id="nome" name="nome" required type="text" value="">
+               <br><br>
+               <label for="matricola">Matricola</label><br>
+               <input id="matricola" name="matricola" required type="text" value="">
+               <br><br>
+               <label for="gruppo">Gruppo</label><br>
+               <select id="gruppo" name="gruppo" required><option selected value="so-sangiovanni">so-sangiovanni</option></select>
+               <br><br>
+               <input id="submit" name="submit" type="submit" value="Invia">
+            </div>
+
+         </fieldset>
+      </form>
+   </body>
+</html>
