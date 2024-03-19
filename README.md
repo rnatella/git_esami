@@ -49,7 +49,7 @@ $ pip install -r requirements.txt
 ```
 
 
-Deploy local Gitea+MariaDB server
+Deploy local Gitea+DB server
 
 ```
 cd docker-compose-gitea/
@@ -68,9 +68,10 @@ cd ..
 
 
 
-Initialize accounts for users (e.g., 10 students per classroom, 30 students in total)
+Initialize accounts for users (e.g., 2 groups, different code per group, 10 students per group, 20 students in total)
 ```
-./exams_create.sh  esame-2023-07  10  ./folder-with-code  gruppo1,gruppo2,gruppo3
+./exams_create.sh  so-sangiovanni  10  ./1st-folder-with-code
+./exams_create.sh  so-fuorigrotta  20  ./2nd-folder-with-code
 ```
 
 In a new shell, launch the web form. You can configure here the IP address of the server (environment variable `SERVER_IP`), students will get it through the web form.
