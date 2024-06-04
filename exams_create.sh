@@ -3,7 +3,7 @@
 
 if [[ "$VIRTUAL_ENV" == "" ]]
 then
-    echo "Not running within virtualenv, quitting."
+    echo "Not running within virtualenv, quitting." 1>&2
     exit 1
 fi
 
@@ -13,7 +13,7 @@ PYTHON=${VIRTUAL_ENV}/bin/python3
 
 if [ "$#" -lt 3 ]
 then
-    echo "Usage: $0 <subgroup-name-prefix> <number-of-students-per-classroom> <path-to-code-folder> [classroom,classroom,...]"
+    echo "Usage: $0 <subgroup-name-prefix> <number-of-students-per-classroom> <path-to-code-folder> [classroom,classroom,...]" 1>&2
     exit 1
 fi
 
@@ -25,20 +25,20 @@ SUBGROUPS_STR=$4
 
 if [[ "${SUBGROUP_PREFIX}" == "" ]]
 then
-    echo "First parameter should be a string prefix (e.g., "esame-2023-07")"
+    echo "First parameter should be a string prefix (e.g., "esame-2023-07")" 1>&2
     exit 1
 fi
 
 
 if [[ ! ${STUDENTS} =~ ^[0-9]+$ ]]
 then
-    echo "Second parameter should be an integer (the number of students to initialize, per classroom)"
+    echo "Second parameter should be an integer (the number of students to initialize, per classroom)" 1>&2
     exit 1
 fi
 
 if [[ ! -d ${REPO_REFERENCE} ]]
 then
-    echo "Third parameter should be valid path of folder with code"
+    echo "Third parameter should be valid path of folder with code" 1>&2
     exit 1
 fi
 
@@ -65,9 +65,9 @@ do
     echo "Initializing subgroup: $SUBGROUP"
     echo
 
-    mkdir ./$SUBGROUP
+    mkdir -p ./repos/$SUBGROUP
 
-    $PYTHON create_repo.py -n $STUDENTS -s $SUBGROUP --repo ./$SUBGROUP --ref $REPO_REFERENCE -b gitea
+    $PYTHON create_repo.py -n $STUDENTS -s $SUBGROUP --repo ./repos/$SUBGROUP --ref $REPO_REFERENCE -b gitea
 
 done
 

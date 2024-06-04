@@ -2,7 +2,7 @@
 
 if [[ "$VIRTUAL_ENV" == "" ]]
 then
-    echo "Not running within virtualenv, quitting."
+    echo "Not running within virtualenv, quitting." 1>&2
     exit 1
 fi
 
@@ -27,9 +27,11 @@ else
 fi
 
 
-
-GITEA_CONTAINER=$(docker ps -aqf "name=gitea-app")
-GITEA_GATEWAY=$(docker inspect  -f '{{range.NetworkSettings.Networks}}{{println .Gateway}}{{end}}' ${GITEA_CONTAINER} |head -1)
+if [ "${GITEA_GATEWAY}" == "" ]
+then
+	GITEA_CONTAINER=$(docker ps -aqf "name=gitea-app")
+	GITEA_GATEWAY=$(docker inspect  -f '{{range.NetworkSettings.Networks}}{{println .Gateway}}{{end}}' ${GITEA_CONTAINER} |head -1)
+fi
 
 echo "Monitoring: ${SUBGROUPS[@]}"
 

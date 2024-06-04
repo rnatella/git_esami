@@ -5,13 +5,19 @@ read -p "If you want to continue, type 'y': " CONFIRM
 
 if [[ $CONFIRM != "y" ]]
 then
-    echo "Quitting"
+    echo "Quitting" 1>&2
     exit 1
 fi
 
-rm -f students.db
-rm -rf flask_session
+
+STUDENT_DB=${STUDENT_DB:="./db/students.db"}
+
+rm -f ${STUDENT_DB}
+
+rm -rf flask_session/*
 rm -f .flaskenv
+
+rm -rf repos/*
 
 docker stop gitea-app
 docker rm gitea-app

@@ -104,5 +104,30 @@ To delete everything (DB, flask sessions, code repos)
 ```
 
 
+# Tutorial for dockerized scripts
 
+Deploy Gitea as before (use `gitea_configure.sh`, `gitea_token.sh`, `gitea_https.sh`).
 
+Build the container image for the scripts:
+```
+docker build -t git_esami -f docker/Dockerfile .
+```
+
+Create and manage exams with the following commands:
+```
+# To initialize users (can be ran multiple times)
+./docker/exams_create.sh so-test 10 ./path-to-source
+
+# From a dedicated shell
+export SERVER_IP="1.2.3.4"
+./docker/exams_web_form.sh
+
+# From a dedicated shell
+./docker/exams_monitor.sh
+
+# From a dedicated shell
+./docker/exams_disable.sh
+./docker/exams_enable.sh
+./docker/exams_pull_repos.sh
+
+```

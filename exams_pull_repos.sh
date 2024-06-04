@@ -2,7 +2,7 @@
 
 if [[ "$VIRTUAL_ENV" == "" ]]
 then
-    echo "Not running within virtualenv, quitting."
+    echo "Not running within virtualenv, quitting." 1>&2
     exit 1
 fi
 
@@ -32,7 +32,7 @@ do
 
     echo "Pulling repos: $SUBGROUP"
 
-    $PYTHON check_repo.py -s $SUBGROUP  --pull --rename -r ./$SUBGROUP
+    $PYTHON check_repo.py -s $SUBGROUP  --pull --rename -r ./repos/$SUBGROUP
 done
 
 

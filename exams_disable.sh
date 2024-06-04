@@ -2,7 +2,7 @@
 
 if [[ "$VIRTUAL_ENV" == "" ]]
 then
-    echo "Not running within virtualenv, quitting."
+    echo "Not running within virtualenv, quitting." 1>&2
     exit 1
 fi
 

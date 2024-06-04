@@ -1,0 +1,12 @@
+env
+docker
+docker-compose-gitea
+esame-*
+flask-session
+images
+__pycache__
+template_docx
+testrepo-demo
+*.md
+*.db
+db

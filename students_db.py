@@ -12,12 +12,18 @@ from openpyxl.styles import Font
 
 class StudentsDB:
 
-    def __init__(self, db_file="students.db"):
+    def __init__(self, db_file="./db/students.db"):
+
+
+        if os.environ.get("STUDENT_DB") is not None:
+            db_file = os.environ.get("STUDENT_DB")
+
 
         new_db = True
 
         if os.path.exists(db_file):
             new_db = False
+
 
         self.connection = sqlite3.connect(db_file)
 

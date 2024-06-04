@@ -344,7 +344,13 @@ if __name__ == '__main__':
         init_commits(students, top_project_group, project_subgroup)
 
 
-    db_file="students.db"
+    db_file = os.environ.get("STUDENT_DB")
+
+    if db_file is None:
+        db_file = "./db/students.db"
+
+    if not os.path.exists(db_file):
+        raise EnvironmentError(f'STUDENT_DB file at {db_file} has not been found')
 
 
     loop = asyncio.new_event_loop()

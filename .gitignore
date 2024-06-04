@@ -5,6 +5,8 @@ python-gitlab.cfg
 gitea.toml
 generated_sheet.docx
 .flaskenv
-flask_session
+flask_session/*
+db/*
+repos/*
 .env
 *.db

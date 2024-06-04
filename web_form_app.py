@@ -33,7 +33,15 @@ app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
 def connect_db():
-    db_file="students.db"
+
+    db_file = os.environ.get("STUDENT_DB")
+
+    if db_file is None:
+        db_file = "./db/students.db"
+
+    if not os.path.exists(db_file):
+        raise EnvironmentError(f'STUDENT_DB file at {db_file} has not been found')
+
     connection = sqlite3.connect(db_file)
     return connection
 
