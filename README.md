@@ -20,7 +20,11 @@ Lo studente riceve inoltre i comandi dettagliati per
 ![Demo git](/images/demo-git.png)
 
 
-La sessione sul web form dura 2 ore. Lo studente può riavviare il suo browser o il suo computer. Il token di sessione è salvato sul filesystem, nella cartella `flask_session`, con chiave generata casualmente al primo avvio del web form, e salvata nel file `.flaskenv`.
+La sessione sul web form dura 2 ore. Lo studente può riavviare il suo browser o il suo computer. Il token di sessione è salvato sul filesystem del server, nella cartella `flask_session`, con chiave generata casualmente al primo avvio del web form, e salvata nel file `.flaskenv`.
+
+Il docente può monitorare i commit inviati dagli studenti tramite una interfaccia su console a caratteri.
+
+![Overview](/images/demo-console.png)
 
 Prima di iniziare gli esami, il docente deve creare preliminarmente gli account. È sufficiente indicare quali gruppi creare, e quanti account creare per ogni gruppo. Non è richiesto (anche se è possibile) inserire preliminarmente i dati degli studenti, perché saranno loro a inserire i loro dati nel form web. 
 

@@ -11,7 +11,7 @@ then
 		y|Y )
 			echo "Removing old configuration..."
 
-			#docker-compose down
+			#docker compose down
 			docker compose down -v
 			docker container prune --force
 			docker volume prune --force

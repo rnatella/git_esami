@@ -56,7 +56,7 @@ else
 fi
 
 
-
+mkdir -p ./db/
 
 for SUBGROUP in "${SUBGROUPS[@]}"
 do
