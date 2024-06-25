@@ -20,4 +20,11 @@ then
 	esac
 fi
 
-flask  --app web_form_app  run
+CERT_FLAGS=""
+
+if [ "${FLASK_USE_HTTPS}" != "" ]
+then
+	CERT_FLAGS="--cert=adhoc"
+fi
+
+flask  --app web_form_app  run  $CERT_FLAGS 
