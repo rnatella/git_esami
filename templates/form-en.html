@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+   <head>
+   <style>
+      .error {
+         color:red;
+         font-weight:bold;
+         margin:0px 0px 10px;
+      }
+   </style>
+   </head>
+   <body>
+      <h2>Registration Form</h2>
+
+      {% for message in form.nome.errors %}
+         <div class="error">Error: {{ message }}</div>
+      {% endfor %}
+
+      {% for message in form.cognome.errors %}
+         <div class="error">Error: {{ message }}</div>
+      {% endfor %}
+
+      {% for message in form.matricola.errors %}
+         <div class="error">Error: {{ message }}</div>
+      {% endfor %}
+
+      {% for message in form.gruppo.errors %}
+         <div class="error">Error: {{ message }}</div>
+      {% endfor %}
+
+      <form action="/" method="POST">
+
+            {{ form.csrf_token }}
+
+            <div style = "font-size:18px;" font-weight:bold; margin-left:150px;>
+               {{ form.cognome.label }}<br>
+               {{ form.cognome }}
+               <br><br>
+               {{ form.nome.label }}<br>
+               {{ form.nome }}
+               <br><br>
+               {{ form.matricola.label }}<br>
+               {{ form.matricola }}
+               <br><br>
+               {{ form.gruppo.label}}<br>
+               {{ form.gruppo }}
+               <br><br>
+               {{ form.submit }}
+            </div>
+
+         </fieldset>
+      </form>
+   </body>
+</html>

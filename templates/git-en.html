@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+   <head>
+      <style type="text/css">
+      code {
+        background-color: #eee;
+        border: 1px solid #999;
+        display: block;
+        padding: 20px;
+      }
+      </style>
+   </head>
+   <body>
+
+      <font><b>Surname:</b> {{ session.cognome }}</font>
+      <font><b>Name:</b> {{ session.nome }}</font>
+      <font><b>ID Number:</b> {{ session.matricola }}</font>
+      <font><b>Group:</b> {{ session.gruppo }}</font>
+      <br/><br/>
+
+
+      Welcome,<br/><br/>
+
+      Run the following commands from the terminal to download the assignment:
+
+      <code>
+         export GIT_SSL_NO_VERIFY=1<br/>
+	 git clone {{ session.repository_url }}<br/>
+	 cd {{ session.username }}<br/>
+	 git config user.name "{{ session.cognome }} {{ session.nome }} {{ session.matricola }}"<br/>
+	 git config user.email "studente@example.com"<br/>
+	 git config http.sslVerify false
+      </code>
+
+      <br/><br/>
+
+      To submit your code, use the following commands from the terminal:
+
+      <code>
+         ... go to folder {{ session.username }} ...<br/>
+         git add --all<br/>
+	 git commit -m "Soluzione {{ session.cognome }} {{ session.nome }}"<br/>
+         git push<br/>
+      </code>
+
+      <br/><br/>
+      <b>Most recent commit</b>: {{ session.last_commit_msg }} {{ session.last_commit_time }}
+
+      <br/><br/>
+
+      <details>
+	<summary>More information</summary>
+        <b>Username git:</b> {{ session.username }}<br/>
+        <b>Password git:</b> {{ session.password }}<br/>
+      </details>
+
+   </body>
+</html>
