@@ -1,45 +1,46 @@
 # PMGC (Poor Man's Git Classroom)
 
-Questo tool è una collezione di script e di configurazioni per attivare un server Git per la gestione degli esami.
+This project is a collection of scripts and configurations to handle programming assignments, using a Git management platform (Gitea or Gitlab).
 
 ![Overview](/images/overview.png)
 
 
-Lo studente accede a un form web, ed inserisce i propri dati (cognome, nome, matricola). Su indicazione del docente, lo studente inserisce anche il gruppo di esame a cui partecipa (ad esempio, per dividere gli studenti per docenti, oppure per dare tracce diverse).
+The student opens a web form, and inserts his/her data (surname, name, ID number). The student can also select a group: for example, groups can be used to handle students from different classrooms, or to distribute different assignments.
 
 ![Demo form](/images/demo-form.png)
 
 
+After submitting the form, in the response page the student receives a dedicated account (e.g., student-10, with random password) to access the Git server. Every account has a dedicated Git repository, with the same name of the username (e.g., student-10).
 
-Lo studente riceve in risposta un account (es. student-10, con password casuale) per accedere al server git. Ogni account dispone di 1 repository, con lo stesso nome dell'utente (es. student-10).
-
-Lo studente riceve inoltre i comandi dettagliati per
-- scaricare in locale il repository, e configurarlo
-- salvare le modifiche sul server
+The student will also find Git commands to:
+- clone the dedicated repository on his/her local computer, and configure the repo
+- push changes to the server
 
 ![Demo git](/images/demo-git.png)
 
 
-La sessione sul web form dura 2 ore. Lo studente può riavviare il suo browser o il suo computer. Il token di sessione è salvato sul filesystem del server, nella cartella `flask_session`, con chiave generata casualmente al primo avvio del web form, e salvata nel file `.flaskenv`.
+The web page with the account data and commands can be safely reloaded. The session on the web form lasts for 2 hours by default. Thus, the student can reload the browser or reboot the computer. The server can also be safely rebooted without losing the sessions. The server saves session tokens on the filesystem, in the folder `flask_session`. The encryption key is generated randomly at the first execution of the web form, and saved in `.flaskenv`.
 
-Il docente può monitorare i commit inviati dagli studenti tramite una interfaccia su console a caratteri.
+
+The teacher can monitor in real-time the commits pushed by students, using a console UI.
 
 ![Overview](/images/demo-console.png)
 
-Prima di iniziare gli esami, il docente deve creare preliminarmente gli account. È sufficiente indicare quali gruppi creare, e quanti account creare per ogni gruppo. Non è richiesto (anche se è possibile) inserire preliminarmente i dati degli studenti, perché saranno loro a inserire i loro dati nel form web. 
+Before distributing the assignments, the teacher has to create the student accounts. It suffices to indicate which groups to create, and how many accounts to create per group. It is not required (although it is possible) to insert student data in the accounts (name, surname, etc.), since they will insert their personal information through the web form.
 
-Sono forniti i seguenti script per la gestione degli account e dei repository:
-- **docker-compose-gitea/gitea_configure.sh**: Crea dei container per il server Gitea e relativo dabatase MySQL.
-- **docker-compose-gitea/gitea_token.sh**: Ottiene un token per l'accesso alle API Gitea (salvato in **gitea.toml**).
-- **docker-compose-gitea/gitea_https.sh**: Abilita il supporto a HTTPS in Gitea (con certificato self-signed).
-- **exams_create.sh**: Crea gli utenti sia per il form web (database SQLite in **students.db**), sia per il server Gitea (database MySQL).
-- **exams_web_form.sh**: Lancia una app Flask che fornisce l'accesso iniziale agli studenti.
-- **exams_disable.sh**: Disabilita il push di commit per tutti i gruppi, o per uno specifico gruppo.
-- **exams_enable.sh**: Abilita il push di commit.
-- **exams_list.sh**: Elenca i gruppi.
-- **exams_monitor.sh**: Mostra in tempo reale i commit degli studenti.
-- **exams_pull_repos.sh**: Scarica (o aggiorna) in locale i repository degli studenti.
-- **exams_delete.sh**: Rimuove tutto (container, DB, repositories, etc.)
+
+The project provides the following scripts to manage accounts and repositories:
+- **docker-compose-gitea/gitea_configure.sh**: Runs containers for Gitea and MySQL.
+- **docker-compose-gitea/gitea_token.sh**: Gets a token to access Gitea through REST API (saved in **gitea.toml**).
+- **docker-compose-gitea/gitea_https.sh**: Enables HTTPS in Gitea (with a self-signed certificate).
+- **exams_create.sh**: Creates accounts both on Gitea (stored in MySQL) and on the web form (save in a SQLite db **students.db**).
+- **exams_web_form.sh**: Runs a Flask app that provides a web form for students for initial access.
+- **exams_disable.sh**: Disables commit pushes (for all groups, or for a specific group).
+- **exams_enable.sh**: Enbles commit pushes (for all groups, or for a specific group).
+- **exams_list.sh**: Lists groups.
+- **exams_monitor.sh**: Shows pushed commits from students in real-time.
+- **exams_pull_repos.sh**: Clones/pulls the repositories for all students.
+- **exams_delete.sh**: Removes everything (containers, DBs, repositories, etc.)
 
 
 # Quick tutorial
