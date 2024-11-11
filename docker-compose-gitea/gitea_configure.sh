@@ -78,11 +78,12 @@ cat << EOF > ${GITEA_TOML}
 default = "local"
 
 [local]
-url = 'https://0.0.0.0:3000'
+url = '${GITEA_BASE_URL}'
 token = '<TOKEN>'
 EOF
 
 fi
+
 
 echo "Updating Gitea client configuration (${GITEA_TOML})..."
 

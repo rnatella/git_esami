@@ -34,6 +34,8 @@ echo "Updating container environment variables..."
 
 perl -p -i -e 's|http://|https://|' .env
 
+export $(grep -v '^#' .env | xargs)
+
 
 echo
 echo "Restarting containers..."
