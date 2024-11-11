@@ -263,7 +263,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--group', default="so", help="Top-level GitLab group")
     parser.add_argument('-s', '--subgroup', nargs='+', help="GitLab subgroup(s)", required=True)
-    parser.add_argument('-p', '--webhook_port', default=8000, type=int, help="Webhook port")
+    parser.add_argument('-p', '--webhook_port', default=9000, type=int, help="Webhook port")
     parser.add_argument('-w', '--webhook_path', default="/webhook", help="Webhook path")
     parser.add_argument('-u', '--webhook_server', help="Webhook server address")
     parser.add_argument('--webhook_as_git_server_url', action=argparse.BooleanOptionalAction, help="Set webhook URL as the same of the Git server URL")

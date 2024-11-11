@@ -28,11 +28,12 @@ fi
 
 cp .env.dist .env
 
-MYSQL_ROOT_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-MYSQL_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+MYSQL_ROOT_PASSWORD=$(LC_ALL=C bash -c 'cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1')
+MYSQL_PASSWORD=$(LC_ALL=C bash -c 'cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1')
 
 echo "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" >> .env
 echo "MYSQL_PASSWORD=${MYSQL_PASSWORD}" >> .env
+echo "GITEA_SSH_PORT=22222" >> .env
 
 
 GITEA_ADMIN_USERNAME="root"

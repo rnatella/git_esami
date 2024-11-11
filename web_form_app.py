@@ -47,18 +47,18 @@ def connect_db():
 
 
 
-app.server_ip = os.environ.get("SERVER_IP")
+app.git_server_ip = os.environ.get("GIT_SERVER_IP")
 
 def replace_url():
 
-    if not app.server_ip is None:
+    if not app.git_server_ip is None:
 
         parsed_url = urllib.parse.urlparse(session["repository_url"])
 
         session["repository_url"] = parsed_url._replace(netloc="{}:{}@{}:{}".format(
                                                                 parsed_url.username, 
                                                                 parsed_url.password, 
-                                                                app.server_ip, 
+                                                                app.git_server_ip, 
                                                                 parsed_url.port)
                                                ).geturl()
 
@@ -217,12 +217,12 @@ connection.close()
 
 
 
-if not app.server_ip is None:
+if not app.git_server_ip is None:
 
    try:
-       socket.inet_aton(app.server_ip)
-   except e:
-       print("Invalid address in SERVER_IP environment variable.")
+       socket.inet_aton(app.git_server_ip)
+   except:
+       print("Invalid address in GIT_SERVER_IP environment variable.")
        sys.exit(1)
 
 

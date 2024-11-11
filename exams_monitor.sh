@@ -35,6 +35,8 @@ fi
 
 echo "Monitoring: ${SUBGROUPS[@]}"
 
+export WEBHOOK_PORT=${WEBHOOK_PORT:-9000}
+
 #$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_as_git_server_url
-$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_server="${GITEA_GATEWAY}"
+$PYTHON monitor_repo.py  -s ${SUBGROUPS[@]} --webhook_server="${GITEA_GATEWAY}" --webhook_port=${WEBHOOK_PORT}
 

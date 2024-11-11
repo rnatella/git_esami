@@ -79,11 +79,12 @@ Initialize accounts for users (e.g., 2 groups, different code per group, 10 stud
 ./exams_create.sh  so-fuorigrotta  20  ./2nd-folder-with-code
 ```
 
-In a new shell, launch the web form. You can configure here the public IP address of the server, by setting the environment variable `SERVER_IP`. The students will receive a GIT URL with this IP address. You can set `FLASK_USE_HTTPS` to enable HTTPS with a self-signed certificate.
+In a new shell, launch the web form. You can configure here the public IP address of the Git server, by setting the environment variable `GIT_SERVER_IP`. The students will receive a GIT URL with this IP address. You can set `FLASK_USE_HTTPS` to enable HTTPS with a self-signed certificate.
 ```
 source env/bin/activate
-export SERVER_IP="1.2.3.4"
+export GIT_SERVER_IP="1.2.3.4"
 export FLASK_USE_HTTPS=1
+export FLASK_RUN_PORT=8000
 ./exams_web_form.sh
 ```
 
@@ -125,8 +126,9 @@ Create and manage exams with the following commands:
 ./docker/exams_create.sh so-test 10 ./path-to-source
 
 # From a dedicated shell
-export SERVER_IP="1.2.3.4"
+export GIT_SERVER_IP="1.2.3.4"
 export FLASK_USE_HTTPS=1
+export FLASK_RUN_PORT=8000
 ./docker/exams_web_form.sh
 
 # From a dedicated shell
